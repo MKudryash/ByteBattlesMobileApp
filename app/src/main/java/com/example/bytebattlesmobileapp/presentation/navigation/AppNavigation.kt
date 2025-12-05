@@ -33,21 +33,22 @@ fun AppNavigation() {
         composable(Screen.Start.route) {
             StartScreen(
                 onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
-                onNavigateToRegister = {navController.navigate(Screen.Auth.route)}
+                onNavigateToRegister = {navController.navigate(Screen.SignUp.route)}
             )
         }
 
         composable(Screen.Auth.route) {
             AuthScreen(
-                onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
+                onNavigateBack = { navController.navigateUp() },
                 onNavigateToMain = { navController.navigate(Screen.Main.route) }
             )
         }
 
         composable(Screen.SignUp.route) {
             SignUpScreen(
-                onNavigateToMain = { navController.navigate(Screen.Main.route) },
-                onNavigateBack = { navController.navigateUp() }
+                onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateBackMain ={navController.navigate(Screen.Main.route)}
             )
         }
 
