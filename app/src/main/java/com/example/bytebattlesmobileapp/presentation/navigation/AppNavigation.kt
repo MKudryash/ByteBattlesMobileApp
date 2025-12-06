@@ -27,7 +27,7 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Start.route
+        startDestination = Screen.Train.route
     ) {
 
         composable(Screen.Start.route) {

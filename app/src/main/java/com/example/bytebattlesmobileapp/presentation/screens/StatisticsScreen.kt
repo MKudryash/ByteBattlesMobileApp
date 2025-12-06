@@ -2,7 +2,6 @@ package com.example.bytebattlesmobileapp.presentation.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,11 +24,8 @@ import androidx.compose.ui.unit.sp
 import com.example.bytebattlesmobileapp.R
 import com.example.bytebattlesmobileapp.presentation.components.AchievementsGrid
 import com.example.bytebattlesmobileapp.presentation.components.CardProfileStatistic
-import com.example.bytebattlesmobileapp.presentation.components.Header
 import com.example.bytebattlesmobileapp.presentation.components.RowProfileStatisticPoint
 import com.example.bytebattlesmobileapp.presentation.components.StatisticPoint
-import com.example.bytebattlesmobileapp.presentation.components.TaskCard
-import com.example.bytebattlesmobileapp.presentation.components.TopAppBarComponent
 import com.example.bytebattlesmobileapp.presentation.components.UserHeader
 
 @Composable
