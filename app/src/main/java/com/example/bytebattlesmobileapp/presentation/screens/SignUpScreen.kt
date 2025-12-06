@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bytebattlesmobileapp.R
 import com.example.bytebattlesmobileapp.presentation.components.ActionButton
+import com.example.bytebattlesmobileapp.presentation.components.BackArrow
 import com.example.bytebattlesmobileapp.presentation.components.CustomUnderlinedTextField
 import com.example.bytebattlesmobileapp.presentation.components.RememberMeCheckbox
 import com.example.bytebattlesmobileapp.presentation.components.SingleRoundedCornerBox
@@ -76,38 +77,15 @@ fun SignUpScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
                     ) {
-                        // Box со стрелкой
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 45.dp, start = 20.dp),
                             horizontalArrangement = Arrangement.Start
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(15.dp))
-                                    .background(Color(0xFF5EC2C3))
-                                    .clickable(
-                                        onClick =
-                                        {
-                                            onNavigateBack()
-                                        }
-                                    )
-                                    .border(
-                                        width = 1.dp,
-                                        color = Color.White,
-                                        shape = RoundedCornerShape(15.dp)
-                                    )
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.arrow_start),
-                                    contentDescription = "Стрелка",
-                                    modifier = Modifier
-                                        .align(Alignment.Center)
-                                        .size(24.dp)
-                                )
-                            }
+                            BackArrow(
+                                { onNavigateBack() })
                         }
 
                         Spacer(modifier = Modifier.height(90.dp))

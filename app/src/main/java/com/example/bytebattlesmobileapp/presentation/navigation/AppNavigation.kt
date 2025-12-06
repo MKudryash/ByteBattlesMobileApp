@@ -79,7 +79,8 @@ fun AppNavigation() {
             val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
             TaskInfoScreen(
                 taskId = taskId,
-                onNavigateBack = { navController.navigateUp() }
+                onNavigateBack = { navController.navigateUp() },
+                {navController.navigate(Screen.Train.route)}
             )
         }
 
@@ -91,7 +92,8 @@ fun AppNavigation() {
 
         composable(Screen.Battle.route) {
             BattleScreen(
-                onNavigateBack = { navController.navigateUp() }
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateTrain = {navController.navigate(Screen.Train.route)}
             )
         }
 

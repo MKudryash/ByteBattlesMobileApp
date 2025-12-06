@@ -57,9 +57,9 @@ fun StartScreen(
                             .padding(top = 56.dp),
                         text = "Программируй. Соревнуйся. Вдохновляй",
                         color = Color.White,
-                        fontWeight = FontWeight.Normal,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 24.sp,
-                        fontFamily = FontFamily(Font(R.font.monomaniacone_regular)),
+                        fontFamily = FontFamily(Font(R.font.ibmplexmono_regular)),
                     )
 
                     Spacer(modifier = Modifier.height(36.dp))
