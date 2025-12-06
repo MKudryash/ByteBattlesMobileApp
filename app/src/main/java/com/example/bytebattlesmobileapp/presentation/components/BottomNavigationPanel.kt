@@ -33,7 +33,8 @@ fun BottomNavigationPanel(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.08f),
+            .fillMaxHeight(0.08f)
+            .background(Color.Transparent),
         shape = RoundedCornerShape(
             topStart = 20.dp,
             topEnd = 20.dp,
@@ -45,11 +46,16 @@ fun BottomNavigationPanel(
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 8.dp
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = Color.White
         )
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .background(Color(0xFF2C3646)), // Повторяем фон,
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             // Первый элемент (Домой)
@@ -138,7 +144,7 @@ fun NavigationItem(
             Box(
                 modifier = Modifier
                     .width(38.dp)
-                    .height(3.dp)
+                    .height(5.dp)
                     .background(
                         color = Color(0xFF53C2C3),
                         shape = RoundedCornerShape(50)
@@ -155,7 +161,9 @@ fun NavigationItem(
         ) {
             IconButton(
                 onClick = onClick,
-                modifier = Modifier.size(48.dp).padding(top=5.dp)
+                modifier = Modifier
+                    .size(48.dp)
+                    .padding(top = 5.dp)
             ) {
                 Icon(
                     painter = icon,
@@ -168,13 +176,12 @@ fun NavigationItem(
     }
 }
 
-// Модель для навигационных элементов
 sealed class NavItem(val title: String, val route: String) {
-    object Home : NavItem("Главная", "home")
-    object Search : NavItem("Поиск", "search")
-    object Main : NavItem("Центр", "main")
-    object Profile : NavItem("Профиль", "profile")
-    object Settings : NavItem("Настройки", "settings")
+    object Home : NavItem("Главная", Screen.Main.route)
+    object Search : NavItem("Задачи", Screen.Task.route)
+    object Main : NavItem("Баттл", Screen.Battle.route)
+    object Profile : NavItem("Профиль", Screen.Profile.route)
+    object Settings : NavItem("Статистика", Screen.Statistics.route)
 }
 
 @Preview
@@ -206,12 +213,6 @@ fun MainScreenWithBottomNav() {
         }
     }
 }
-
-
-
-
-
-
 
 
 // Демонстрация всех вариантов

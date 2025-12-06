@@ -1,46 +1,36 @@
 package com.example.bytebattlesmobileapp.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.bytebattlesmobileapp.presentation.screens.AuthScreen
-import com.example.bytebattlesmobileapp.presentation.screens.BattleScreen
-import com.example.bytebattlesmobileapp.presentation.screens.MainScreen
-import com.example.bytebattlesmobileapp.presentation.screens.NewStormScreen
-import com.example.bytebattlesmobileapp.presentation.screens.ProfileScreen
-import com.example.bytebattlesmobileapp.presentation.screens.SignUpScreen
-import com.example.bytebattlesmobileapp.presentation.screens.StartScreen
-import com.example.bytebattlesmobileapp.presentation.screens.StatisticsScreen
-import com.example.bytebattlesmobileapp.presentation.screens.TaskInfoScreen
-import com.example.bytebattlesmobileapp.presentation.screens.TaskScreen
-import com.example.bytebattlesmobileapp.presentation.screens.TrainCheckScreen
-import com.example.bytebattlesmobileapp.presentation.screens.TrainCloseScreen
-import com.example.bytebattlesmobileapp.presentation.screens.TrainInfoScreen
-import com.example.bytebattlesmobileapp.presentation.screens.TrainScreen
+import com.example.bytebattlesmobileapp.presentation.screens.*
 
 @Composable
-fun AppNavigation() {
-    val navController = rememberNavController()
-
+fun AppNavigation(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Train.route
+        startDestination = Screen.Start.route // Или другой стартовый экран
     ) {
-
+        // Аутентификационные экраны (без панели)
         composable(Screen.Start.route) {
             StartScreen(
                 onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
-                onNavigateToRegister = {navController.navigate(Screen.SignUp.route)}
+                onNavigateToRegister = { navController.navigate(Screen.SignUp.route) }
             )
         }
 
         composable(Screen.Auth.route) {
             AuthScreen(
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateToMain = { navController.navigate(Screen.Main.route) }
+                onNavigateToMain = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(0) // Очищаем весь стек до главного экрана
+                    }
+                }
             )
         }
 
@@ -48,10 +38,15 @@ fun AppNavigation() {
             SignUpScreen(
                 onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateBackMain ={navController.navigate(Screen.Main.route)}
+                onNavigateBackMain = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(0)
+                    }
+                }
             )
         }
 
+        // Основные экраны с панелью навигации
         composable(Screen.Main.route) {
             MainScreen(
                 onNavigateToTask = { navController.navigate(Screen.Task.route) },
@@ -72,28 +67,9 @@ fun AppNavigation() {
             )
         }
 
-        composable(
-            Screen.TaskInfo.route,
-            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
-            TaskInfoScreen(
-                taskId = taskId,
-                onNavigateBack = { navController.navigateUp() },
-                {navController.navigate(Screen.Train.route)}
-            )
-        }
-
         composable(Screen.Profile.route) {
             ProfileScreen(
                 onNavigateBack = { navController.navigateUp() }
-            )
-        }
-
-        composable(Screen.Battle.route) {
-            BattleScreen(
-                onNavigateBack = { navController.navigateUp() },
-                onNavigateTrain = {navController.navigate(Screen.Train.route)}
             )
         }
 
@@ -103,12 +79,39 @@ fun AppNavigation() {
             )
         }
 
+        // Экран без панели навигации
+        composable(Screen.Battle.route) {
+            BattleScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateTrain = { navController.navigate(Screen.Train.route) }
+            )
+        }
+
+        // Остальные экраны без панели
+        composable(
+            Screen.TaskInfo.route,
+            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
+            TaskInfoScreen(
+                taskId = taskId,
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateTrain = { navController.navigate(Screen.Train.route) },
+            )
+        }
+
         composable(Screen.Train.route) {
             TrainScreen(
                 onNavigateToTrainInfo = { trainId ->
                     navController.navigate(Screen.TrainInfo.createRoute(trainId))
                 },
-                onNavigateBack = { navController.navigateUp() }
+                onNavigateBack = {
+                    // Возвращаемся к последнему экрану с панелью
+                    navController.popBackStack(
+                        route = Screen.Main.route,
+                        inclusive = false
+                    ) ?: navController.navigate(Screen.Main.route)
+                }
             )
         }
 
@@ -119,39 +122,7 @@ fun AppNavigation() {
             val trainId = backStackEntry.arguments?.getString("trainId") ?: ""
             TrainInfoScreen(
                 trainId = trainId,
-                onNavigateToTrainCheck = { navController.navigate(Screen.TrainCheck.createRoute(trainId)) },
-                onNavigateBack = { navController.navigateUp() }
-            )
-        }
-
-        composable(
-            Screen.TrainCheck.route,
-            arguments = listOf(navArgument("trainId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val trainId = backStackEntry.arguments?.getString("trainId") ?: ""
-            TrainCheckScreen(
-                trainId = trainId,
-                onNavigateToTrainClose = { navController.navigate(Screen.TrainClose.createRoute(trainId)) },
-                onNavigateBack = { navController.navigateUp() }
-            )
-        }
-
-        composable(
-            Screen.TrainClose.route,
-            arguments = listOf(navArgument("trainId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val trainId = backStackEntry.arguments?.getString("trainId") ?: ""
-            TrainCloseScreen(
-                trainId = trainId,
-                onNavigateToMain = { navController.navigate(Screen.Main.route) {
-                    popUpTo(Screen.Main.route) { inclusive = true }
-                } },
-                onNavigateBack = { navController.navigateUp() }
-            )
-        }
-
-        composable(Screen.NewStorm.route) {
-            NewStormScreen(
+                onNavigateToTrainCheck = { navController.navigate(Screen.TrainInfo.createRoute(trainId)) },
                 onNavigateBack = { navController.navigateUp() }
             )
         }
