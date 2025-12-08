@@ -1,6 +1,7 @@
 package com.example.bytebattlesmobileapp.presentation.screens
 
 import android.media.Image
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,9 +21,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,21 +42,59 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bytebattlesmobileapp.R
 import com.example.bytebattlesmobileapp.presentation.components.ActionButton
 import com.example.bytebattlesmobileapp.presentation.components.BackArrow
 import com.example.bytebattlesmobileapp.presentation.components.CustomUnderlinedTextField
 import com.example.bytebattlesmobileapp.presentation.components.RememberMeCheckbox
 import com.example.bytebattlesmobileapp.presentation.components.SingleRoundedCornerBox
+import com.example.bytebattlesmobileapp.presentation.viewmodel.AuthViewModel
 
 @Composable
 fun AuthScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToMain: () -> Unit
+    onNavigateToMain: () -> Unit,
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
+    val uiState by authViewModel.uiState.collectAsStateWithLifecycle()
+    val shouldNavigateToMain by authViewModel.navigateToMain.collectAsStateWithLifecycle()
 
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
+
+
+
+
+
+    LaunchedEffect(shouldNavigateToMain) {
+        if (shouldNavigateToMain) {
+            onNavigateToMain()
+            authViewModel.navigationHandled()
+        }
+    }
+
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF2C3646)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    // Показываем ошибку, если есть
+    uiState.errorMessage?.let { errorMessage ->
+        LaunchedEffect(errorMessage) {
+            // Можно показать Snackbar или другое уведомление
+            Log.e("AuthScreen", errorMessage)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -61,7 +102,6 @@ fun AuthScreen(
     ) {
         // Первый элемент Column - Box
         Box {
-            val roundedShape = RoundedCornerShape(15.dp)
             SingleRoundedCornerBox(
                 modifier = Modifier.align(Alignment.TopEnd),
                 topStart = 0.dp,
@@ -156,7 +196,14 @@ fun AuthScreen(
 
             ActionButton(
                 text = "ВОЙТИ",
-                onClick = { onNavigateToMain() },
+                onClick = {
+                    authViewModel.login(
+                            email.value,
+                            password.value
+                        )
+
+                    //onNavigateToMain()
+                    },
                 color = Color(0xFF5EC2C3),
                 modifier = Modifier
                     .fillMaxWidth(0.8f)

@@ -40,9 +40,12 @@ import com.example.bytebattlesmobileapp.presentation.components.TopAppBarCompone
 @Composable
 fun BattleScreen(
     onNavigateBack: () -> Unit,
-    onNavigateTrain: () -> Unit
+    onNavigateTrain: () -> Unit,
+    onNavigateLobby:()->Unit
 ) {
-    var selectedIndex by remember { mutableStateOf(0) }
+    var selectedLanguage by remember { mutableStateOf(0) }
+    var selectedTypeBattle by remember { mutableStateOf(0) }
+    var selectedDifficulty by remember { mutableStateOf(0) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -72,8 +75,8 @@ fun BattleScreen(
                             CardLanguage(
                                 painter = painterResource(R.drawable.csharp),
                                 language,
-                                selected = selectedIndex == index,
-                                onClick = { selectedIndex = index }
+                                selected = selectedLanguage == index,
+                                onClick = { selectedLanguage = index }
                             )
 
                         }
@@ -102,8 +105,8 @@ fun BattleScreen(
                             CardLanguage(
                                 painter = painterResource(it.iconRes),
                                 nameLanguage = it.name,
-                                selected = selectedIndex == it.id,
-                                onClick = { selectedIndex = it.id }
+                                selected = selectedDifficulty == it.id,
+                                onClick = { selectedDifficulty = it.id }
                             )
 
                         }
@@ -132,8 +135,8 @@ fun BattleScreen(
                             CardLanguage(
                                 painter = painterResource(it.iconRes),
                                 nameLanguage = it.name,
-                                selected = selectedIndex == it.id,
-                                onClick = { selectedIndex = it.id }
+                                selected = selectedTypeBattle == it.id,
+                                onClick = { selectedTypeBattle = it.id }
                             )
 
                         }
@@ -147,7 +150,7 @@ fun BattleScreen(
                     ) {
                         ActionButton(
                             text = "Начать бой".uppercase(),
-                            onClick = { onNavigateTrain() },
+                            onClick = { onNavigateLobby() },
                             color = Color(0xFF5EC2C3),
                             modifier = Modifier
                                 .fillMaxWidth(0.8f)
@@ -170,5 +173,5 @@ data class TypeOf(
 @Preview
 @Composable
 fun BattleScreenPreview() {
-    BattleScreen({}, {})
+    BattleScreen({}, {},{})
 }

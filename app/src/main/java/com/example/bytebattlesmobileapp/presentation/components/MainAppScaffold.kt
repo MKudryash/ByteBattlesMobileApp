@@ -9,7 +9,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.bytebattlesmobileapp.presentation.navigation.AppNavigation
@@ -24,8 +23,8 @@ fun MainAppScaffold(navController: NavHostController) {
     val shouldShowBottomNav = when {
         currentRoute?.startsWith("main") == true -> true
         currentRoute?.startsWith("task") == true && !currentRoute.contains("task_info") -> true
-        currentRoute?.startsWith("profile") == true -> true
         currentRoute?.startsWith("statistics") == true -> true
+        currentRoute?.startsWith("profile") == true -> true
         else -> false
     }
 
@@ -36,8 +35,8 @@ fun MainAppScaffold(navController: NavHostController) {
         selectedItem = when {
             currentRoute?.startsWith("main") == true -> NavItem.Home
             currentRoute?.startsWith("task") == true && !currentRoute.contains("task_info") -> NavItem.Search
-            currentRoute?.startsWith("profile") == true -> NavItem.Profile
-            currentRoute?.startsWith("statistics") == true -> NavItem.Settings
+            currentRoute?.startsWith("statistics") == true -> NavItem.Statistics // Исправлено
+            currentRoute?.startsWith("profile") == true -> NavItem.Profile // Исправлено
             else -> selectedItem
         }
     }
@@ -63,14 +62,15 @@ fun MainAppScaffold(navController: NavHostController) {
                             NavItem.Main -> {
                                 navController.navigate(Screen.Battle.route)
                             }
-                            NavItem.Profile -> {
-                                navController.navigate(Screen.Profile.route) {
-                                    popUpTo(Screen.Profile.route) { inclusive = true }
-                                }
-                            }
-                            NavItem.Settings -> {
+
+                            NavItem.Statistics -> { // Исправлено: теперь это Statistics
                                 navController.navigate(Screen.Statistics.route) {
                                     popUpTo(Screen.Statistics.route) { inclusive = true }
+                                }
+                            }
+                            NavItem.Profile -> { // Исправлено: теперь это Profile
+                                navController.navigate(Screen.Profile.route) {
+                                    popUpTo(Screen.Profile.route) { inclusive = true }
                                 }
                             }
                         }

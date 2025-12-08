@@ -1,7 +1,6 @@
 package com.example.bytebattlesmobileapp.presentation.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -19,7 +18,8 @@ fun AppNavigation(navController: NavHostController) {
         composable(Screen.Start.route) {
             StartScreen(
                 onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
-                onNavigateToRegister = { navController.navigate(Screen.SignUp.route) }
+                onNavigateToRegister = { navController.navigate(Screen.SignUp.route) },
+                onNavigateToMain = { navController.navigate(Screen.Main.route) }
             )
         }
 
@@ -38,7 +38,7 @@ fun AppNavigation(navController: NavHostController) {
             SignUpScreen(
                 onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateBackMain = {
+                onNavigateToMain = {
                     navController.navigate(Screen.Main.route) {
                         popUpTo(0)
                     }
@@ -83,7 +83,13 @@ fun AppNavigation(navController: NavHostController) {
         composable(Screen.Battle.route) {
             BattleScreen(
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateTrain = { navController.navigate(Screen.Train.route) }
+                onNavigateTrain = { navController.navigate(Screen.Train.route) },
+                onNavigateLobby = {navController.navigate(Screen.BattleLobby.route)}
+            )
+        }
+        composable(Screen.BattleLobby.route) {
+            BattleLobbyScreen (
+                onNavigateBack = { navController.navigateUp() },
             )
         }
 

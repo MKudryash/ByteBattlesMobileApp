@@ -5,18 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -109,17 +103,17 @@ fun BottomNavigationPanel(
 
             // Четвертый элемент (Профиль)
             NavigationItem(
-                item = NavItem.Profile,
-                selected = selectedItem == NavItem.Profile,
-                onClick = { onItemSelected(NavItem.Profile) },
+                item = NavItem.Statistics,
+                selected = selectedItem == NavItem.Statistics,
+                onClick = { onItemSelected(NavItem.Statistics) },
                 icon = painterResource(R.drawable.statisctic)
             )
 
             // Пятый элемент (Настройки)
             NavigationItem(
-                item = NavItem.Settings,
-                selected = selectedItem == NavItem.Settings,
-                onClick = { onItemSelected(NavItem.Settings) },
+                item = NavItem.Profile,
+                selected = selectedItem == NavItem.Profile,
+                onClick = { onItemSelected(NavItem.Profile) },
                 icon = painterResource(R.drawable.user)
             )
         }
@@ -181,7 +175,7 @@ sealed class NavItem(val title: String, val route: String) {
     object Search : NavItem("Задачи", Screen.Task.route)
     object Main : NavItem("Баттл", Screen.Battle.route)
     object Profile : NavItem("Профиль", Screen.Profile.route)
-    object Settings : NavItem("Статистика", Screen.Statistics.route)
+    object Statistics : NavItem("Статистика", Screen.Statistics.route)
 }
 
 @Preview

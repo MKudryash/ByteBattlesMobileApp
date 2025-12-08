@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,8 +48,8 @@ import com.example.bytebattlesmobileapp.presentation.components.TopAppBarCompone
 fun ProfileScreen(
     onNavigateBack: () -> Unit
 ) {
-    val name = remember { mutableStateOf("") }
-    val surname = remember { mutableStateOf("") }
+    val name = remember { mutableStateOf("Ivan") }
+    val surname = remember { mutableStateOf("Ivanovich") }
     val email = remember { mutableStateOf("") }
     val description = remember { mutableStateOf("") }
     Column(
@@ -68,15 +69,35 @@ fun ProfileScreen(
                 bottomStart = 55.dp,
                 bottomEnd = 55.dp,
                 {
-                    Row(horizontalArrangement = Arrangement.SpaceEvenly)
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(top = 30.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                    )
                     {
-                       /* Image()
+                        Image(
+                            painter = painterResource(R.drawable.menu_burger),
+                            contentDescription = ""
+                        )
 
-                        Column {
-                            Image()
-                            Text("${name} ${surname}")
+                        Column (
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ){
+                            Image(
+                                modifier = Modifier.size(100.dp),
+                                painter =  painterResource(R.drawable.userprofile),
+                                contentDescription = "user"
+                            )
+                            Spacer(Modifier.height(15.dp))
+                            Text(
+                                "${name.value} ${surname.value}",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp,
+                                fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
+                            )
                         }
-                        Image()*/
+                        Image(painterResource(R.drawable.man), "")
                     }
                 }
             )

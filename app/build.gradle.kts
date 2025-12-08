@@ -2,6 +2,11 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("kotlin-kapt")
+   id("com.google.dagger.hilt.android")
+    id ("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
+    //id("kotlin-parcelize")
+
 }
 
 android {
@@ -59,4 +64,32 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation("com.github.qawaz:compose-code-editor:2.0.3")
+
+
+    implementation("io.ktor:ktor-client-core:2.3.6")
+    implementation("io.ktor:ktor-client-android:2.3.6")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.6")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.6")
+    implementation("io.ktor:ktor-client-logging:2.3.6")
+    implementation("io.ktor:ktor-client-websockets:2.3.6")
+    implementation("io.ktor:ktor-client-auth:2.3.6")
+
+    // Сериализация JSON
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    // DataStore для хранения токенов
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    kapt("com.google.dagger:hilt-compiler:2.51.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
+    // Для инъекции ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+
+    // Для работы с SavedStateHandle
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.7.0")
+
 }

@@ -12,7 +12,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.bytebattlesmobileapp.presentation.components.MainAppScaffold
 import com.example.bytebattlesmobileapp.presentation.navigation.AppNavigation
 import com.example.bytebattlesmobileapp.presentation.ui.theme.ByteBattlesMobileAppTheme
+import dagger.hilt.EntryPoint
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
