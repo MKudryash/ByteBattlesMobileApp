@@ -79,16 +79,15 @@ class GetLanguageByIdUseCase(private val repository: TaskRepository) {
 
 
 // User Use Cases
-/*class GetUserProfileUseCase(private val repository: UserRepository) {
+class GetUserProfileUseCase(private val repository: UserRepository) {
     suspend operator fun invoke(): UserProfile {
         return repository.getProfile()
     }
-}*/
+}
 
-/*
 class UpdateProfileUseCase(private val repository: UserRepository) {
-    suspend operator fun invoke(username: String? = null, email: String? = null): UserProfile {
-        return repository.updateProfile(UpdateProfileRequest(username))
+    suspend operator fun invoke(username: String? = null, country: String? = null, link: String?, bio: String?): UserProfile {
+        return repository.updateProfile(UpdateProfileRequest(username,country,bio,link))
     }
 }
 
@@ -101,4 +100,4 @@ class GetLeaderBordUseCase(private val repository: UserRepository) {
     suspend operator fun invoke(): List<UserLeader> {
         return repository.getLeaderBord()
     }
-}*/
+}

@@ -1,32 +1,31 @@
 package com.example.bytebattlesmobileapp.data.repository
 
 import com.example.bytebattlesmobileapp.data.network.UserApiService
-import com.example.bytebattlesmobileapp.data.network.dto.battle.ChangePasswordRequest
 import com.example.bytebattlesmobileapp.data.network.dto.user.UpdateProfileRequest
+import com.example.bytebattlesmobileapp.data.network.dto.user.UserLeaderDto
 import com.example.bytebattlesmobileapp.data.network.dto.user.UserProfileDto
+import com.example.bytebattlesmobileapp.data.network.dto.user.UserSettingsDto
 import com.example.bytebattlesmobileapp.data.network.dto.user.UserStatsDto
-import com.example.bytebattlesmobileapp.domain.model.User
+import com.example.bytebattlesmobileapp.domain.model.UserLeader
+import com.example.bytebattlesmobileapp.domain.model.UserSettings
+import com.example.bytebattlesmobileapp.domain.model.UserProfile
+import com.example.bytebattlesmobileapp.domain.model.UserStats
 import com.example.bytebattlesmobileapp.domain.repository.UserRepository
-import com.example.bytebattlesmobileapp.domain.repository.UserStats
+import kotlin.Int
 
 class UserRepositoryImpl(
     private val userApi: UserApiService
 ) : UserRepository {
 
-    override suspend fun getUserProfile(): User {
+
+    override suspend fun getProfile(): UserProfile {
         val response = userApi.getProfile()
         return response.toDomain()
     }
 
-    override suspend fun updateProfile(username: String?, email: String?): User {
-        val request = UpdateProfileRequest(username, email)
+    override suspend fun updateProfile(request: UpdateProfileRequest): UserProfile {
         val response = userApi.updateProfile(request)
         return response.toDomain()
-    }
-
-    override suspend fun changePassword(oldPassword: String, newPassword: String) {
-        val request = ChangePasswordRequest(oldPassword, newPassword)
-        userApi.changePassword(request)
     }
 
     override suspend fun getUserStats(userId: String): UserStats {
@@ -34,34 +33,66 @@ class UserRepositoryImpl(
         return response.toDomain()
     }
 
-    override suspend fun getUserRankings(page: Int, pageSize: Int): List<UserStats> {
-        val response = userApi.getUserRankings(page, pageSize)
+    override suspend fun getLeaderBord(): List<UserLeader> {
+        val response = userApi.getLeaderBord()
         return response.map { it.toDomain() }
     }
 
-    private fun UserProfileDto.toDomain(): User {
-        return User(
+    private fun UserLeaderDto.toDomain(): UserLeader {
+        return UserLeader(
+            userId,
+            username,
+            avatarUrl,
+            country,
+            position,
+            totalExperience,
+            battlesWon,
+            problemsSolved,
+            level
+        )
+    }
+
+    private fun UserProfileDto.toDomain(): UserProfile {
+        return UserProfile(
             id = id,
-            username = username,
-            email = email,
-            rating = rating,
-            battlesWon = battlesWon,
-            battlesLost = battlesLost,
-            tasksSolved = tasksSolved
+            userId = userId,
+            userName = userName,
+            avatarUrl = avatarUrl,
+            bio, gitHubUrl, linkedInUrl, level,
+            settings.toDomain(), stats?.toDomain(), createdAt, isPublic, email = email, country
         )
     }
 
     private fun UserStatsDto.toDomain(): UserStats {
         return UserStats(
-            userId = userId,
-            rating = rating,
-            rank = rank,
-            battlesTotal = battlesTotal,
-            battlesWon = battlesWon,
-            winRate = winRate,
-            averageCompletionTime = averageCompletionTime,
-            favoriteLanguage = favoriteLanguage,
-            tasksSolved = tasksSolved
+            totalProblemsSolved,
+            totalBattles,
+            wins,
+            losses,
+            draws,
+            currentStreak,
+            maxStreak,
+            totalExperience,
+            winRate,
+            experienceToNextLevel,
+            easyProblemsSolved,
+            mediumProblemsSolved,
+            hardProblemsSolved,
+            totalSubmissions,
+            successfulSubmissions,
+            totalExecutionTime,
+            solvedTaskIds,
+            successRate,
+            averageExecutionTime
         )
     }
+
+    private fun UserSettingsDto.toDomain(): UserSettings {
+        return UserSettings(
+            emailNotifications, battleInvitations, achievementNotifications,
+            theme, codeEditorTheme, preferredLanguage
+        )
+    }
+
+
 }

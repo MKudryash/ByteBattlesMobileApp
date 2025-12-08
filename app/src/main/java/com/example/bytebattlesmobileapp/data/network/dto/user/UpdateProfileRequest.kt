@@ -5,5 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UpdateProfileRequest(
     val username: String? = null,
-    val email: String? = null
+    val country: String? = null,
+    val bio:String? = null,
+    val gitHubUrl:String? = null
 )

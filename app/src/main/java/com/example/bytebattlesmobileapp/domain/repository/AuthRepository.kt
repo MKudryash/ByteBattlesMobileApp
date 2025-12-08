@@ -11,15 +11,3 @@ interface AuthRepository {
     suspend fun isLoggedIn(): Boolean
     fun getCurrentUserId(): String?
 }
-
-data class UserStats(
-    val userId: String,
-    val rating: Int,
-    val rank: Int,
-    val battlesTotal: Int,
-    val battlesWon: Int,
-    val winRate: Double,
-    val averageCompletionTime: Long?,
-    val favoriteLanguage: String?,
-    val tasksSolved: Int
-)

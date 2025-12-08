@@ -259,6 +259,30 @@ object UseCaseModule {
         return GetTasksWithPaginationUseCase(repository)
     }
 
+    @Provides
+    @Singleton
+    fun provideGetLeaderBordUseCase(repository: UserRepository): GetLeaderBordUseCase {
+        return GetLeaderBordUseCase(repository)
+    }
+
+ @Provides
+    @Singleton
+    fun provideGetUserProfileUseCaseCase(repository: UserRepository): GetUserProfileUseCase {
+        return GetUserProfileUseCase(repository)
+    }
+
+ @Provides
+    @Singleton
+    fun provideUpdateProfileUseCase(repository: UserRepository): UpdateProfileUseCase {
+        return UpdateProfileUseCase(repository)
+    }
+
+ @Provides
+    @Singleton
+    fun provideGetUserStatsUseCase(repository: UserRepository): GetUserStatsUseCase {
+        return GetUserStatsUseCase(repository)
+    }
+
 
 }
 

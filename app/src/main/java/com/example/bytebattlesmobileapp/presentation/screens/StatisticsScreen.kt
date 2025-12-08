@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,17 +23,32 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bytebattlesmobileapp.R
 import com.example.bytebattlesmobileapp.presentation.components.AchievementsGrid
 import com.example.bytebattlesmobileapp.presentation.components.CardProfileStatistic
 import com.example.bytebattlesmobileapp.presentation.components.RowProfileStatisticPoint
 import com.example.bytebattlesmobileapp.presentation.components.StatisticPoint
 import com.example.bytebattlesmobileapp.presentation.components.UserHeader
+import com.example.bytebattlesmobileapp.presentation.viewmodel.ProfileViewModel
 
 @Composable
 fun StatisticsScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+
+    // Обработка ошибок
+    error?.let { errorMessage ->
+        LaunchedEffect(errorMessage) {
+            // Показать Snackbar
+
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()

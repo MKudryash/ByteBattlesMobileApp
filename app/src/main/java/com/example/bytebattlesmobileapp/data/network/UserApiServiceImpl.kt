@@ -8,29 +8,22 @@ import io.ktor.client.request.*
 
 class UserApiServiceImpl(private val client: HttpClient) : UserApiService {
     override suspend fun getProfile(): UserProfileDto {
-        return client.get("user/profile").body()
+        return client.get("user-profiles/me").body()
     }
 
     override suspend fun updateProfile(request: UpdateProfileRequest): UserProfileDto {
-        return client.put("user/profile") {
+        return client.put("user-profiles/me") {
             setBody(request)
         }.body()
-    }
-
-    override suspend fun changePassword(request: ChangePasswordRequest) {
-        client.put("user/password") {
-            setBody(request)
-        }
     }
 
     override suspend fun getUserStats(userId: String): UserStatsDto {
-        return client.get("user/$userId/stats").body()
+        return client.get("user-profiles/me/stats").body()
     }
 
-    override suspend fun getUserRankings(page: Int, pageSize: Int): List<UserStatsDto> {
-        return client.get("user/rankings") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+    override suspend fun getLeaderBord(): List<UserLeaderDto> {
+        return client.get("user-profiles/leaderboard").body()
+
     }
+
 }
