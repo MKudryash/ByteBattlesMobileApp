@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.bytebattlesmobileapp.presentation.components.SideMenu
 import com.example.bytebattlesmobileapp.presentation.screens.*
 
 @Composable
@@ -63,8 +64,11 @@ fun AppNavigation(navController: NavHostController) {
                 onNavigateToTaskInfo = { taskId ->
                     navController.navigate(Screen.TaskInfo.createRoute(taskId))
                 },
-                onNavigateBack = { navController.navigateUp() }
+                onNavigateSideMenu = { navController.navigate(Screen.SideMenu.route) }
             )
+        }
+        composable(Screen.SideMenu.route) {
+            SideScreen()
         }
 
         composable(Screen.Profile.route) {
@@ -84,11 +88,11 @@ fun AppNavigation(navController: NavHostController) {
             BattleScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onNavigateTrain = { navController.navigate(Screen.Train.route) },
-                onNavigateLobby = {navController.navigate(Screen.BattleLobby.route)}
+                onNavigateLobby = { navController.navigate(Screen.BattleLobby.route) }
             )
         }
         composable(Screen.BattleLobby.route) {
-            BattleLobbyScreen (
+            BattleLobbyScreen(
                 onNavigateBack = { navController.navigateUp() },
             )
         }
@@ -128,7 +132,13 @@ fun AppNavigation(navController: NavHostController) {
             val trainId = backStackEntry.arguments?.getString("trainId") ?: ""
             TrainInfoScreen(
                 trainId = trainId,
-                onNavigateToTrainCheck = { navController.navigate(Screen.TrainInfo.createRoute(trainId)) },
+                onNavigateToTrainCheck = {
+                    navController.navigate(
+                        Screen.TrainInfo.createRoute(
+                            trainId
+                        )
+                    )
+                },
                 onNavigateBack = { navController.navigateUp() }
             )
         }

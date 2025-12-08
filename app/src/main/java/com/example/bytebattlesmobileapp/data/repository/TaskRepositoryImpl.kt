@@ -1,12 +1,15 @@
 package com.example.bytebattlesmobileapp.data.repository
 
 import com.example.bytebattlesmobileapp.data.network.TaskApiService
+import com.example.bytebattlesmobileapp.data.network.dto.task.LanguageDto
+import com.example.bytebattlesmobileapp.data.network.dto.task.LibraryDto
 import com.example.bytebattlesmobileapp.data.network.dto.task.TaskDto
-import com.example.bytebattlesmobileapp.data.network.dto.task.TaskExampleDto
+import com.example.bytebattlesmobileapp.data.network.dto.task.TaskLanguageDto
 import com.example.bytebattlesmobileapp.data.network.dto.task.TestCaseDto
+import com.example.bytebattlesmobileapp.domain.model.Language
+import com.example.bytebattlesmobileapp.domain.model.Library
 import com.example.bytebattlesmobileapp.domain.model.Task
-import com.example.bytebattlesmobileapp.domain.model.TaskDifficulty
-import com.example.bytebattlesmobileapp.domain.model.TaskExample
+import com.example.bytebattlesmobileapp.domain.model.TaskLanguage
 import com.example.bytebattlesmobileapp.domain.model.TestCase
 import com.example.bytebattlesmobileapp.domain.repository.TaskRepository
 import java.util.UUID
@@ -14,68 +17,116 @@ import java.util.UUID
 class TaskRepositoryImpl(
     private val taskApi: TaskApiService
 ) : TaskRepository {
-
-    override suspend fun getTasks(page: Int, pageSize: Int): List<Task> {
-        val response = taskApi.getTasks(page, pageSize)
-        return response.tasks.map { it.toDomain() }
-    }
-
     override suspend fun getTaskById(taskId: UUID): Task {
         val response = taskApi.getTaskById(taskId)
         return response.toDomain()
     }
 
-    override suspend fun getTasksByDifficulty(difficulty: TaskDifficulty): List<Task> {
-        val response = taskApi.getTasksByDifficulty(difficulty.name)
+    override suspend fun getTasksWithPagination(
+        page: Int,
+        pageSize: Int,
+        searchTerm: String?,
+        difficulty: String?,
+        languageId: String?
+    ): List<Task> {
+        val response = taskApi.getTasksWithPagination(
+            page,
+            pageSize, searchTerm, difficulty, languageId
+        )
+
+        android.util.Log.d("TaskImpl", response.size.toString())
         return response.map { it.toDomain() }
     }
 
-    override suspend fun getTasksByLanguage(languageId: UUID): List<Task> {
-        val response = taskApi.getTasksByLanguage(languageId)
+    override suspend fun getTasks(
+        searchTerm: String?,
+        difficulty: String?,
+        languageId: String?
+    ): List<Task> {
+        val response = taskApi.getTasks(searchTerm, difficulty, languageId)
         return response.map { it.toDomain() }
     }
 
-  /*  override suspend fun submitSolution(taskId: UUID, code: String, languageId: UUID): CodeSubmission {
-        val request = SubmitSolutionRequest(taskId, code, languageId)
-        val response = taskApi.submitSolution(request)
+    override suspend fun getLanguageById(languageId: UUID): Language {
+        val response = taskApi.getLanguageById(languageId)
         return response.toDomain()
     }
 
-    override suspend fun getSubmissionStatus(submissionId: UUID): CodeSubmission {
-        val response = taskApi.getSubmissionStatus(submissionId)
-        return response.toDomain()
-    }*/
-
+    override suspend fun getLanguages(
+        searchTerm: String?,
+        difficulty: String?,
+        languageId: String?
+    ): List<com.example.bytebattlesmobileapp.domain.model.Language> {
+        val response = taskApi.getLanguages(searchTerm, difficulty, languageId)
+        return response.map { it.toDomain() }
+    }
 
     private fun TaskDto.toDomain(): Task {
         return Task(
             id = id,
             title = title,
             description = description,
-            difficulty = TaskDifficulty.valueOf(difficulty.uppercase()),
-            languageId = languageId,
-            timeLimit = timeLimit,
-            memoryLimit = memoryLimit,
-            examples = examples.map { it.toDomain() },
-            testCases = testCases.map { it.toDomain() },
-            tags = tags
-        )
-    }
-
-    private fun TaskExampleDto.toDomain(): TaskExample {
-        return TaskExample(
-            input = input,
-            output = output,
-            explanation = explanation
+            difficulty = difficulty,
+            author = author,
+            functionName = functionName,
+            patternMain = patternMain,
+            patternFunction = patternFunction,
+            parameters = parameters,
+            returnType = returnType,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            totalAttempts = totalAttempts,
+            successRate = successRate,
+            successfulAttempts = successfulAttempts,
+            averageExecutionTime = averageExecutionTime,
+            language = language?.toDomain(),
+            taskLanguages = taskLanguages.map { it.toDomain() },
+            libraries = libraries.map { it.toDomain() },
+            testCases = testCaseDtos.map { it.toDomain() }
         )
     }
 
     private fun TestCaseDto.toDomain(): TestCase {
         return TestCase(
-            id = id,
-            input = input,
-            expectedOutput = expectedOutput,
-            isPublic = isPublic
+            id, input, output, isExample
         )
     }
+
+    private fun LanguageDto.toDomain(): Language {
+        return Language(
+            id = id,
+            title = title,
+            shortTitle = shortTitle,
+            fileExtension = fileExtension,
+            compilerCommand = compilerCommand,
+            executionCommand = executionCommand,
+            supportsCompilation = supportsCompilation,
+            patternMain = patternMain,
+            patternFunction = patternFunction,
+            libraries = libraries.map { it.toDomain() } ?: emptyList()
+        )
+    }
+
+    private fun TaskLanguageDto.toDomain(): TaskLanguage {
+        return TaskLanguage(
+            languageId = languageId,
+            languageTitle = languageTitle,
+            languageShortTitle = languageShortTitle,
+            c = c, // Поле 'c' из JSON, можно переименовать в codeTemplate в модели
+            compilerCommand = compilerCommand,
+            executionCommand = executionCommand,
+            supportsCompilation = supportsCompilation
+        )
+    }
+
+    private fun LibraryDto.toDomain(): Library {
+        return Library(
+            id = id,
+            name = name,
+            description = description,
+            version = version,
+            languageId = languageId
+        )
+    }
+
 }

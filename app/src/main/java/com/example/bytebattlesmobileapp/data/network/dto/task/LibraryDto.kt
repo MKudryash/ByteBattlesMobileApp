@@ -3,9 +3,10 @@ package com.example.bytebattlesmobileapp.data.network.dto.task
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class TestCaseDto(
+data class LibraryDto(
     val id: String,
-    val input: String,
-    val output: String,
-    val isExample: Boolean
+    val name: String,
+    val description: String,
+    val version: String,
+    val languageId: String
 )

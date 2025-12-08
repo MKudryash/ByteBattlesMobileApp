@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bytebattlesmobileapp.domain.model.User
-import com.example.bytebattlesmobileapp.domain.usecase.GetUserProfileUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.LoginUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.RegisterUseCase
 import com.example.bytebattlesmobileapp.domain.repository.AuthRepository

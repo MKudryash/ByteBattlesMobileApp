@@ -13,6 +13,7 @@ sealed class Screen(val route: String, val screenType: ScreenType) {
 
     object Main : Screen("main", ScreenType.WithBottomNav)
     object Task : Screen("task", ScreenType.WithBottomNav)
+    object SideMenu : Screen("side_menu", ScreenType.WithBottomNav)
     object Profile : Screen("profile", ScreenType.WithBottomNav)
     object Statistics : Screen("statistics", ScreenType.WithBottomNav)
 

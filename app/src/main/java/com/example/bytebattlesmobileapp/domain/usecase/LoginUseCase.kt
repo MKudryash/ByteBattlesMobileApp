@@ -1,7 +1,7 @@
 package com.example.bytebattlesmobileapp.domain.usecase
 
 
-import com.example.bytebattlesmobileapp.data.network.dto.auth.Role
+import com.example.bytebattlesmobileapp.data.network.dto.user.UpdateProfileRequest
 import com.example.bytebattlesmobileapp.domain.model.*
 import com.example.bytebattlesmobileapp.domain.repository.*
 import java.util.*
@@ -45,27 +45,60 @@ class SubmitBattleCodeUseCase(private val repository: BattleRepository) {
 }
 
 // Task Use Cases
+class GetTasksWithPaginationUseCase(private val repository: TaskRepository) {
+    suspend operator fun invoke(page:Int=1,pageSize:Int=10,searchTerm:String?,
+                                difficulty: String?,languageId: String? ): List<Task> {
+        return repository.getTasksWithPagination(page = page, pageSize = pageSize,searchTerm = searchTerm, difficulty = difficulty,languageId = languageId)
+    }
+}
 class GetTasksUseCase(private val repository: TaskRepository) {
-    suspend operator fun invoke(page: Int = 1, pageSize: Int = 10): List<Task> {
-        return repository.getTasks(page, pageSize)
+    suspend operator fun invoke(page:Int=1,pageSize:Int=10,searchTerm:String?,
+                                difficulty: String?,languageId: String? ): List<Task> {
+        return repository.getTasks(searchTerm = searchTerm, difficulty = difficulty,languageId = languageId)
     }
 }
 
-/*class SubmitSolutionUseCase(private val repository: TaskRepository) {
-    suspend operator fun invoke(taskId: UUID, code: String, languageId: UUID): CodeSubmission {
-        return repository.submitSolution(taskId, code, languageId)
+class GetLanguagesUseCase(private val repository: TaskRepository) {
+    suspend operator fun invoke(page:Int=1,pageSize:Int=10,searchTerm:String?,
+                                difficulty: String?,languageId: String? ): List<Language> {
+        return repository.getLanguages(searchTerm = searchTerm, difficulty = difficulty,languageId = languageId)
+    }
+}
+
+class GetTaskByIdUseCase(private val repository: TaskRepository) {
+    suspend operator fun invoke(id:UUID): Task {
+        return repository.getTaskById(id)
+    }
+}
+class GetLanguageByIdUseCase(private val repository: TaskRepository) {
+    suspend operator fun invoke(id:UUID): Language {
+        return repository.getLanguageById(id)
+    }
+}
+
+
+
+// User Use Cases
+/*class GetUserProfileUseCase(private val repository: UserRepository) {
+    suspend operator fun invoke(): UserProfile {
+        return repository.getProfile()
     }
 }*/
 
-// User Use Cases
-class GetUserProfileUseCase(private val repository: UserRepository) {
-    suspend operator fun invoke(): User {
-        return repository.getUserProfile()
+/*
+class UpdateProfileUseCase(private val repository: UserRepository) {
+    suspend operator fun invoke(username: String? = null, email: String? = null): UserProfile {
+        return repository.updateProfile(UpdateProfileRequest(username))
     }
 }
 
-class UpdateProfileUseCase(private val repository: UserRepository) {
-    suspend operator fun invoke(username: String? = null, email: String? = null): User {
-        return repository.updateProfile(username, email)
+class GetUserStatsUseCase(private val repository: UserRepository) {
+    suspend operator fun invoke(userId: String): UserStats {
+        return repository.getUserStats(userId)
     }
 }
+class GetLeaderBordUseCase(private val repository: UserRepository) {
+    suspend operator fun invoke(): List<UserLeader> {
+        return repository.getLeaderBord()
+    }
+}*/

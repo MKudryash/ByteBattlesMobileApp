@@ -1,15 +1,19 @@
 package com.example.bytebattlesmobileapp.domain.repository
 
-import com.example.bytebattlesmobileapp.domain.model.CodeSubmission
+import com.example.bytebattlesmobileapp.data.network.dto.task.LanguageDto
+import com.example.bytebattlesmobileapp.domain.model.Language
 import com.example.bytebattlesmobileapp.domain.model.Task
-import com.example.bytebattlesmobileapp.domain.model.TaskDifficulty
 import java.util.UUID
 
 interface TaskRepository {
-    suspend fun getTasks(page: Int = 1, pageSize: Int = 10): List<Task>
+
     suspend fun getTaskById(taskId: UUID): Task
-    suspend fun getTasksByDifficulty(difficulty: TaskDifficulty): List<Task>
-    suspend fun getTasksByLanguage(languageId: UUID): List<Task>
-  /*  suspend fun submitSolution(taskId: UUID, code: String, languageId: UUID): CodeSubmission*/
-   /* suspend fun getSubmissionStatus(submissionId: UUID): CodeSubmission*/
+    suspend fun getTasksWithPagination(page:Int=1,pageSize:Int=10,searchTerm:String?,
+                                       difficulty: String?,languageId: String? ):List<Task>
+    suspend fun getTasks(searchTerm:String?,
+                         difficulty: String?,languageId: String? ):List<Task>
+    suspend fun getLanguageById(languageId: UUID): Language
+
+    suspend fun getLanguages(searchTerm:String?,
+                             difficulty: String?,languageId: String? ):List<Language>
 }

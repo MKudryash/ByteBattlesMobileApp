@@ -1,24 +1,32 @@
 package com.example.bytebattlesmobileapp.data.network.dto.task
 
-import kotlinx.serialization.Contextual
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.util.UUID
 
 @Serializable
 data class TaskDto(
-    @Contextual
-    val id: UUID,
+    val id: String,
     val title: String,
     val description: String,
     val difficulty: String,
-    @Contextual
-    val languageId: UUID,
-    val timeLimit: Int, // seconds
-    val memoryLimit: Int, // MB
-    val examples: List<TaskExampleDto>,
-    val testCases: List<TestCaseDto>,
-    val tags: List<String>,
-    val authorId: String,
-    val createdAt: String
-)
+    val author: String,
+    val functionName: String,
+    val patternMain: String,
+    val patternFunction: String,
+    val parameters: String,
+    val returnType: String,
+    val createdAt: String,
+    val updatedAt: String,
+    val totalAttempts: Int,
+    val successfulAttempts: Int,
+    val successRate: Double,
+    val averageExecutionTime: Double,
+    val language: LanguageDto?,
+    val taskLanguages: List<TaskLanguageDto>,
+    val libraries: List<LibraryDto>,
+    @SerialName("testCases")
+    val testCaseDtos: List<TestCaseDto>
+) {
+
+}
 
