@@ -58,6 +58,7 @@ fun TaskScreen(
     val languagesState by taskViewModel.languageState.collectAsStateWithLifecycle()
     val tasks by taskViewModel.tasks.collectAsStateWithLifecycle()
     val languages by taskViewModel.languages.collectAsStateWithLifecycle()
+    val selectedLanguageId by taskViewModel.selectedLanguageId.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -83,12 +84,8 @@ fun TaskScreen(
                     )
                     Spacer(Modifier.height(12.dp))
 
-
-
-
                     when (languagesState) {
                         is TaskViewModel.LanguageState.Loading -> {
-
                             Box(
                                 modifier = Modifier
                                     .fillParentMaxWidth()
@@ -97,11 +94,9 @@ fun TaskScreen(
                             ) {
                                 CircularProgressIndicator()
                             }
-
                         }
 
                         is TaskViewModel.LanguageState.Empty -> {
-
                             Box(
                                 modifier = Modifier
                                     .fillParentMaxWidth()
@@ -109,15 +104,13 @@ fun TaskScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Задачи не найдены",
+                                    text = "Языки не найдены",
                                     color = Color.White
                                 )
                             }
-
                         }
 
                         is TaskViewModel.LanguageState.Error -> {
-
                             Box(
                                 modifier = Modifier
                                     .fillParentMaxWidth()
@@ -133,12 +126,11 @@ fun TaskScreen(
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Text(
-                                        text = (tasksState as TaskViewModel.TaskState.Error).message,
+                                        text = (languagesState as TaskViewModel.LanguageState.Error).message,
                                         color = Color.White
                                     )
                                 }
                             }
-
                         }
 
                         is TaskViewModel.LanguageState.Success -> {
@@ -146,37 +138,47 @@ fun TaskScreen(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(horizontal = 16.dp)
                             ) {
-                                itemsIndexed(languages) { index, it ->
+                                // Добавляем опцию "Все языки"
+                                item {
                                     CardLanguage(
-                                        painter = painterResource(R.drawable.csharp),
-                                        it.title,
-                                        selected = selectedIndex == index,
-                                        onClick = { selectedIndex = index }
+                                        painter = painterResource(R.drawable.menu_profile), // Добавьте иконку для всех языков
+                                        nameLanguage = "Все",
+                                        selected = selectedLanguageId == null,
+                                        onClick = {
+                                            selectedIndex = -1
+                                            taskViewModel.selectLanguage(null)
+                                        }
+                                    )
+                                }
+
+                                itemsIndexed(languages) { index, language ->
+                                    CardLanguage(
+                                        painter = painterResource(getLanguageIcon(language.title)), // Нужна функция для получения иконки
+                                        nameLanguage = language.title,
+                                        selected = selectedLanguageId == language.id,
+                                        onClick = {
+                                            selectedIndex = index
+                                            print(language.id)
+                                            taskViewModel.selectLanguage(language.id)
+                                        }
                                     )
                                 }
                             }
-
-
-
-
-                            Spacer(Modifier.height(16.dp))
-
-
                         }
                     }
 
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "Задачи",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp,
+                        fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
+                    )
 
 
+                    Spacer(Modifier.height(8.dp))
                 }
-                Text(
-                    "Задачи",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp,
-                    fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
-                )
-                Spacer(Modifier.height(8.dp))
-                Spacer(Modifier.height(16.dp))
             }
 
             // Отображаем задачи или состояние загрузки
@@ -202,10 +204,20 @@ fun TaskScreen(
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "Задачи не найдены",
-                                color = Color.White
-                            )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "Задачи не найдены",
+                                    color = Color.White
+                                )
+                                if (selectedLanguageId != null) {
+                                    Text(
+                                        text = "Попробуйте выбрать другой язык",
+                                        color = Color.Gray,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -238,7 +250,7 @@ fun TaskScreen(
                 is TaskViewModel.TaskState.Success -> {
                     // Добавляем задачи как отдельные items
                     items(tasks) { task ->
-                        CardNewsOrTask (
+                        CardNewsOrTask(
                             task.title,
                             task.difficulty,
                             task.title,
@@ -249,6 +261,19 @@ fun TaskScreen(
                 }
             }
         }
+    }
+}
+
+// Функция для получения иконки языка (добавьте свою логику)
+@Composable
+fun getLanguageIcon(languageId: String): Int {
+    return when (languageId) {
+        "Java" -> R.drawable.language_java
+        "Python" -> R.drawable.language_python
+        "C" -> R.drawable.language_c
+        "C#" -> R.drawable.csharp
+        // Добавьте другие языки
+        else -> R.drawable.menu_profile
     }
 }
 @Preview

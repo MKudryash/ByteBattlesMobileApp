@@ -13,5 +13,5 @@ data class Language(
     val supportsCompilation: Boolean,
     val patternMain: String,
     val patternFunction: String,
-    val libraries: List<Library>,
+    val libraries: List<Library?>,
 )

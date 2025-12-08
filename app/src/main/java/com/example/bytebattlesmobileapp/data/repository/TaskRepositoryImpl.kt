@@ -103,7 +103,7 @@ class TaskRepositoryImpl(
             supportsCompilation = supportsCompilation,
             patternMain = patternMain,
             patternFunction = patternFunction,
-            libraries = libraries.map { it.toDomain() } ?: emptyList()
+            libraries = libraries.map { it?.toDomain() } ?: emptyList()
         )
     }
 

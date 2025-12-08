@@ -13,5 +13,5 @@ data class LanguageDto(
     val supportsCompilation: Boolean,
     val patternMain: String,
     val patternFunction: String,
-    val libraries: List<LibraryDto>
+    val libraries: List<LibraryDto?>
 )

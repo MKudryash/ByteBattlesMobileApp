@@ -38,8 +38,8 @@ class TaskViewModel @Inject constructor(
     private val _tasksState = MutableStateFlow<TaskState>(TaskState.Loading)
     val tasksState: StateFlow<TaskState> = _tasksState.asStateFlow()
 
-
-
+    private val _selectedLanguageId = MutableStateFlow<String?>(null)
+    val selectedLanguageId: StateFlow<String?> = _selectedLanguageId.asStateFlow()
     private val _taskState = MutableStateFlow<TaskDetailState>(TaskDetailState.Loading)
     val taskState: StateFlow<TaskDetailState> = _taskState.asStateFlow()
 
@@ -48,6 +48,9 @@ class TaskViewModel @Inject constructor(
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()
+
+    private val _allTasks = MutableStateFlow<List<Task>>(emptyList())
+    val allTasks: StateFlow<List<Task>> = _allTasks.asStateFlow()
 
     private val _languages = MutableStateFlow<List<Language>>(emptyList())
     val languages: StateFlow<List<Language>> = _languages.asStateFlow()
@@ -62,7 +65,40 @@ class TaskViewModel @Inject constructor(
         loadInitialTasks()
         loadInitialLanguages()
     }
+    fun selectLanguage(languageId: String?) {
+        _selectedLanguageId.value = languageId
+        print(languageId)
+        print(languageId)
+        Log.d("select", "come in")
+        Log.d("select", languageId.toString())
+        // Локальная фильтрация задач
+        if (languageId == null) {
+            // Показываем все задачи
+            _tasks.value = _allTasks.value
+            _tasksState.value = if (_allTasks.value.isEmpty()) {
+                TaskState.Empty
+            } else {
 
+                TaskState.Success(_allTasks.value)
+            }
+        } else {
+            // Фильтруем задачи по языку
+
+            Log.d("select", languageId.toString())
+            val filteredTasks = _allTasks.value.filter { task ->
+                // Предполагаем, что у Task есть поле languageId или languages
+                Log.d("select",  task.language?.id.toString())
+                task.language?.id == languageId
+            }
+
+            _tasks.value = filteredTasks
+            _tasksState.value = if (filteredTasks.isEmpty()) {
+                TaskState.Empty
+            } else {
+                TaskState.Success(filteredTasks)
+            }
+        }
+    }
     fun loadInitialTasks(
         searchTerm: String? = null,
         difficulty: String? = null,
@@ -78,15 +114,29 @@ class TaskViewModel @Inject constructor(
 
             Log.d("TaskViewModel", "Loaded ${tasks.size} tasks from API")
 
-            if (tasks.isEmpty()) {
+            // Сохраняем все задачи
+            _allTasks.value = tasks
+
+            // Применяем текущий фильтр (если есть)
+            val tasksToShow = if (_selectedLanguageId.value != null) {
+                tasks.filter { task ->
+                    task.language?.id == _selectedLanguageId.value ||
+                            task.language?.id?.contains(_selectedLanguageId.value!!) == true ||
+                            task.language?.id?.contains(_selectedLanguageId.value!!) == true
+                }
+            } else {
+                tasks
+            }
+
+            if (tasksToShow.isEmpty()) {
                 _tasksState.value = TaskState.Empty
                 _tasks.value = emptyList()
                 Log.d("TaskViewModel", "No tasks found")
             } else {
-                _tasksState.value = TaskState.Success(tasks)
-                _tasks.value = tasks
-                Log.d("TaskViewModel", "Set ${tasks.size} tasks to StateFlow")
-                tasks.forEachIndexed { index, task ->
+                _tasksState.value = TaskState.Success(tasksToShow)
+                _tasks.value = tasksToShow
+                Log.d("TaskViewModel", "Set ${tasksToShow.size} tasks to StateFlow")
+                tasksToShow.forEachIndexed { index, task ->
                     Log.d("TaskViewModel", "Task $index: ${task.title}")
                 }
             }
@@ -97,6 +147,7 @@ class TaskViewModel @Inject constructor(
             _tasksState.value = TaskState.Error(errorMessage)
             Log.e("TaskViewModel", "Error loading tasks: $errorMessage")
             _tasks.value = emptyList()
+            _allTasks.value = emptyList()
         }
     }
     fun loadInitialLanguages(

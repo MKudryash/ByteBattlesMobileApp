@@ -21,7 +21,7 @@ data class TaskDto(
     val successfulAttempts: Int,
     val successRate: Double,
     val averageExecutionTime: Double,
-    val language: LanguageDto?,
+    val language: LanguageDto,
     val taskLanguages: List<TaskLanguageDto>,
     val libraries: List<LibraryDto>,
     @SerialName("testCases")
