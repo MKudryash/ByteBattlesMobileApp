@@ -220,6 +220,7 @@ class TaskViewModel @Inject constructor(
         _taskState.value = TaskDetailState.Loading
         try {
             val task = getTaskByIdUseCase(id)
+            Log.d("TASK", task.toString())
             _taskState.value = TaskDetailState.Success(task)
         } catch (e: Exception) {
             _taskState.value = TaskDetailState.Error(e.message ?: "Failed to load task")

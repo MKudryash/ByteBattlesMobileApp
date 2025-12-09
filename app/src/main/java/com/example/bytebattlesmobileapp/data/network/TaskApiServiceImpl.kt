@@ -20,7 +20,7 @@ class TaskApiServiceImpl(
 
     override suspend fun getTaskById(taskId: UUID): TaskDto {
         return try {
-            client.get("tasks/$taskId").body()
+            client.get("task/$taskId").body()
         } catch (e: ClientRequestException) {
             if (e.response.status == HttpStatusCode.Unauthorized) {
                 tokenManager.clearTokens()
