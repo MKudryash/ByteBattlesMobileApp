@@ -1,5 +1,6 @@
 package com.example.bytebattlesmobileapp.data.network
 
+import com.example.bytebattlesmobileapp.data.network.dto.ActivitiesDto
 import com.example.bytebattlesmobileapp.data.network.dto.battle.ChangePasswordRequest
 import com.example.bytebattlesmobileapp.data.network.dto.user.UpdateProfileRequest
 import com.example.bytebattlesmobileapp.data.network.dto.user.UserLeaderDto
@@ -11,4 +12,6 @@ interface UserApiService {
     suspend fun updateProfile(request: UpdateProfileRequest): UserProfileDto
     suspend fun getUserStats(userId: String): UserStatsDto
     suspend fun getLeaderBord():List<UserLeaderDto>
+
+    suspend fun getRecentActivities():List<ActivitiesDto>
 }

@@ -141,7 +141,7 @@ fun TaskScreen(
                                 // Добавляем опцию "Все языки"
                                 item {
                                     CardLanguage(
-                                        painter = painterResource(R.drawable.menu_profile), // Добавьте иконку для всех языков
+                                        painter = painterResource(R.drawable.icons_all_languages), // Добавьте иконку для всех языков
                                         nameLanguage = "Все",
                                         selected = selectedLanguageId == null,
                                         onClick = {
@@ -273,7 +273,7 @@ fun getLanguageIcon(languageId: String): Int {
         "C" -> R.drawable.language_c
         "C#" -> R.drawable.csharp
         // Добавьте другие языки
-        else -> R.drawable.menu_profile
+        else -> R.drawable.icons_all_languages
     }
 }
 @Preview

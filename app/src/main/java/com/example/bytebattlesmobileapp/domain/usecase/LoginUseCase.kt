@@ -101,3 +101,17 @@ class GetLeaderBordUseCase(private val repository: UserRepository) {
         return repository.getLeaderBord()
     }
 }
+
+class GetUserActivitiesUseCase(private val repository: UserRepository) {
+    suspend operator fun invoke(): List<Activities> {
+        return repository.getRecentActivities()
+    }
+}
+
+//Solution Use Case
+
+class SubmitSolutionUseCase(private val repository: SolutionRepository){
+    suspend operator fun invoke(code: String,languageId: String,taskId: String): Solution{
+        return repository.submitSolution(code = code,languageId,taskId)
+    }
+}

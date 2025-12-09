@@ -1,5 +1,6 @@
 package com.example.bytebattlesmobileapp.data.network
 
+import com.example.bytebattlesmobileapp.data.network.dto.ActivitiesDto
 import com.example.bytebattlesmobileapp.data.network.dto.battle.*
 import com.example.bytebattlesmobileapp.data.network.dto.user.*
 import io.ktor.client.HttpClient
@@ -24,6 +25,10 @@ class UserApiServiceImpl(private val client: HttpClient) : UserApiService {
     override suspend fun getLeaderBord(): List<UserLeaderDto> {
         return client.get("user-profiles/leaderboard").body()
 
+    }
+
+    override suspend fun getRecentActivities(): List<ActivitiesDto> {
+        return client.get("user-profiles/me/recent-activities").body()
     }
 
 }

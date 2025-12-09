@@ -1,11 +1,13 @@
 package com.example.bytebattlesmobileapp.data.repository
 
 import com.example.bytebattlesmobileapp.data.network.UserApiService
+import com.example.bytebattlesmobileapp.data.network.dto.ActivitiesDto
 import com.example.bytebattlesmobileapp.data.network.dto.user.UpdateProfileRequest
 import com.example.bytebattlesmobileapp.data.network.dto.user.UserLeaderDto
 import com.example.bytebattlesmobileapp.data.network.dto.user.UserProfileDto
 import com.example.bytebattlesmobileapp.data.network.dto.user.UserSettingsDto
 import com.example.bytebattlesmobileapp.data.network.dto.user.UserStatsDto
+import com.example.bytebattlesmobileapp.domain.model.Activities
 import com.example.bytebattlesmobileapp.domain.model.UserLeader
 import com.example.bytebattlesmobileapp.domain.model.UserSettings
 import com.example.bytebattlesmobileapp.domain.model.UserProfile
@@ -38,6 +40,18 @@ class UserRepositoryImpl(
         return response.map { it.toDomain() }
     }
 
+    override suspend fun getRecentActivities(): List<Activities> {
+        val response = userApi.getRecentActivities()
+        return response.map {
+            it.toDomain()
+        }
+    }
+
+    private fun ActivitiesDto.toDomain(): Activities{
+        return Activities(
+            type,title,description,timestamp,experienceGained
+        )
+    }
     private fun UserLeaderDto.toDomain(): UserLeader {
         return UserLeader(
             userId,

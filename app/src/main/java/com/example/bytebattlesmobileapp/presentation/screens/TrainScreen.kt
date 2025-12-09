@@ -1,11 +1,15 @@
 package com.example.bytebattlesmobileapp.presentation.screens
 
 import CodeEditor
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,14 +20,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bytebattlesmobileapp.R
+import com.example.bytebattlesmobileapp.domain.model.TestCase
+import com.example.bytebattlesmobileapp.domain.model.TestResult
 import com.example.bytebattlesmobileapp.presentation.components.CardTest
 import com.example.bytebattlesmobileapp.presentation.components.CircleButton
 import com.example.bytebattlesmobileapp.presentation.components.CustomInfoDialog
 import com.example.bytebattlesmobileapp.presentation.components.Header
+import com.example.bytebattlesmobileapp.presentation.viewmodel.TaskViewModel
 import com.wakaztahir.codeeditor.highlight.model.CodeLang
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.UUID
+import kotlin.collections.emptyList
 
 // Enum для управления всеми состояниями модальных окон
 enum class ModalState {
@@ -32,25 +44,111 @@ enum class ModalState {
     SUBMIT_CODE,
     TESTS_BOTTOM_SHEET,
     TEST_DETAILS,
-    // Добавьте другие состояния по мере необходимости
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrainScreen(
-    onNavigateToTrainInfo: (String) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    taskId: String,
+    viewModel: TaskViewModel = hiltViewModel()
 ) {
+    Log.d("Train", "TaskId: $taskId")
+
+    val taskState by viewModel.taskState.collectAsStateWithLifecycle()
+    val submitState by viewModel.submitState.collectAsStateWithLifecycle()
+
     var nameTask by remember { mutableStateOf("Name of Task") }
+    var initialCode by remember { mutableStateOf("// Write your code here") }
+// Используем nullable и инициализируем только один раз
+    var currentCode by remember { mutableStateOf<String?>(null) }
+    var languageId by remember { mutableStateOf("") }
+    var isCodeInitialized by remember { mutableStateOf(false) }
+    var description by remember { mutableStateOf("") }
+    var testCases:List<TestCase> by remember { mutableStateOf(emptyList()) }
+
+    // Загружаем задачу только один раз при инициализации
+    LaunchedEffect(Unit) {
+        if (taskId.isNotEmpty()) {
+            try {
+                viewModel.getTaskById(UUID.fromString(taskId))
+            } catch (e: IllegalArgumentException) {
+                Log.e("TrainScreen", "Invalid UUID: $taskId", e)
+            }
+        }
+    }
+
+    // Обновляем данные при изменении состояния
+    LaunchedEffect(taskState) {
+        when (val state = taskState) {
+            is TaskViewModel.TaskDetailState.Success -> {
+                nameTask = state.task.title
+                initialCode = state.task.patternFunction
+                languageId = state.task.language?.id ?: ""
+                description = state.task.description
+                testCases = state.task.testCases
+
+                // Инициализируем currentCode только один раз
+                if (!isCodeInitialized && currentCode == null) {
+                    currentCode = state.task.patternFunction
+                    isCodeInitialized = true
+                    Log.d("TRAIN", "Initialized code: ${state.task.patternFunction}")
+                }
+                Log.d("TRAIN", "Task loaded: ${state.task.title}")
+            }
+
+            is TaskViewModel.TaskDetailState.Error -> {
+                Log.e("TrainScreen", "Error loading task")
+            }
+
+            TaskViewModel.TaskDetailState.Loading -> {
+                // Состояние загрузки - ничего не делаем
+            }
+        }
+    }
+
     var modalState by remember { mutableStateOf(ModalState.NONE) }
     var showBottomSheet by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val bottomSheetState = rememberModalBottomSheetState()
 
-    // Обработчик навигации
     val onNavigate = { destination: String ->
         modalState = ModalState.NONE
-        onNavigateToTrainInfo(destination)
+    }
+
+    // Функция для отправки решения
+    val onSubmitSolution = {
+        if (currentCode?.isNotEmpty() == true && languageId.isNotEmpty() && taskId.isNotEmpty()) {
+            viewModel.submitSolution(currentCode!!, languageId, taskId)
+            modalState = ModalState.NONE
+        } else {
+            Log.e("TrainScreen", "Cannot submit: missing data")
+        }
+    }
+
+    // Обработка результата отправки
+    LaunchedEffect(submitState) {
+        when (val state = submitState) {
+            is TaskViewModel.SubmitSolutionState.Success -> {
+                Log.d("TrainScreen", "Solution submitted successfully")
+                Log.d("Submit Success", state.solution.successRate.toString())
+                delay(2000)
+                viewModel.clearSubmitState()
+            }
+
+            is TaskViewModel.SubmitSolutionState.Error -> {
+                Log.e("TrainScreen", "Submit error: ${state.error}")
+                // Можно показать уведомление об ошибке
+
+                // Через некоторое время сбрасываем состояние
+                delay(3000)
+                viewModel.clearSubmitState()
+            }
+
+            else -> {
+
+            }
+        }
     }
 
     Box(
@@ -61,37 +159,166 @@ fun TrainScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            Header({ onNavigateBack() }, nameTask)
 
-            Column(
-                modifier = Modifier
-                    .padding(vertical = 10.dp)
-                    .weight(1f)
-            ) {
-                Row(
+            Header(
+                onNavigateBack = { onNavigateBack() },
+                textHeader = when {
+                    submitState is TaskViewModel.SubmitSolutionState.Loading -> "$nameTask (Отправка...)"
+                    submitState is TaskViewModel.SubmitSolutionState.Success -> "$nameTask ✓"
+                    submitState is TaskViewModel.SubmitSolutionState.Error -> "$nameTask ✗"
+                    else -> when (taskState) {
+                        TaskViewModel.TaskDetailState.Loading -> "Загрузка..."
+                        is TaskViewModel.TaskDetailState.Success -> nameTask
+                        is TaskViewModel.TaskDetailState.Error -> "Ошибка"
+                    }
+                }
+            )
+
+            // Показываем индикатор загрузки при отправке
+            if (submitState is TaskViewModel.SubmitSolutionState.Loading) {
+                Box(
                     modifier = Modifier
-                        .padding(horizontal = 10.dp)
-                        .padding(bottom = 10.dp)
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "Решение",
-                        color = Color.White,
-                        fontWeight = FontWeight.Normal,
-                        fontSize = 24.sp,
-                        fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold))
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(color = Color.White)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Отправка решения...",
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+            }
+
+            // Обрабатываем разные состояния загрузки
+            when (val state = taskState) {
+                TaskViewModel.TaskDetailState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color.White)
+                    }
                 }
 
-                CodeEditor(language = CodeLang.CSharp)
+                is TaskViewModel.TaskDetailState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Не удалось загрузить задачу",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Error",
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = {
+                                    if (taskId.isNotEmpty()) {
+                                        try {
+                                            viewModel.getTaskById(UUID.fromString(taskId))
+                                        } catch (e: Exception) {
+                                            Log.e("TrainScreen", "Retry error", e)
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF53C2C3)
+                                )
+                            ) {
+                                Text("Повторить")
+                            }
+                        }
+                    }
+                }
+
+                is TaskViewModel.TaskDetailState.Success -> {
+                    Column(
+                        modifier = Modifier
+                            .padding(vertical = 10.dp)
+                            .weight(1f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = 10.dp)
+                                .padding(bottom = 10.dp)
+                        ) {
+                            Text(
+                                text = "Решение",
+                                color = Color.White,
+                                fontWeight = FontWeight.Normal,
+                                fontSize = 24.sp,
+                                fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold))
+                            )
+                        }
+
+
+                        // Проверяем, что currentCode не null
+                        currentCode?.let { code ->
+                            CodeEditor(
+                                language = getCodeLang(state.task.language!!.title),
+                                initialCode = code,
+                                onCodeChange = { newCode ->
+                                    currentCode = newCode
+                                    Log.d("TrainScreen", "Code updated: ${newCode.length} chars")
+                                }
+                            )
+                        } ?: run {
+                            // Показываем индикатор загрузки, пока код не загружен
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.7f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = Color.White)
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        // Три круга в правом нижнем углу экрана
-        BottomActionButtons(
-            onFinishClick = { modalState = ModalState.FINISH_TASK },
-            onInfoClick = { modalState = ModalState.TESTS_BOTTOM_SHEET },
-            onSubmitClick = { modalState = ModalState.SUBMIT_CODE }
-        )
+        // Показываем кнопки действий только при успешной загрузке и не во время отправки
+        when (taskState) {
+            is TaskViewModel.TaskDetailState.Success -> {
+                if (submitState !is TaskViewModel.SubmitSolutionState.Loading) {
+                    BottomActionButtons(
+                        onFinishClick = { modalState = ModalState.FINISH_TASK },
+                        onInfoClick = { modalState = ModalState.TESTS_BOTTOM_SHEET },
+                        onSubmitClick = {
+                            modalState = ModalState.SUBMIT_CODE
+                            viewModel.submitSolution(currentCode!!, languageId, taskId)
+                        }
+                    )
+                }
+            }
+
+            else -> {}
+        }
 
         // Управление всеми модальными окнами
         ModalWindowsManager(
@@ -100,10 +327,80 @@ fun TrainScreen(
             onNavigate = onNavigate,
             bottomSheetState = bottomSheetState,
             scope = scope,
-            onBottomSheetDismiss = { showBottomSheet = false }
+            onBottomSheetDismiss = { showBottomSheet = false },
+            onSubmitSolution = { onSubmitSolution },
+            testCases,
+            description
         )
     }
 }
+
+// Обновите ModalWindowsManager, чтобы принимать onSubmitSolution
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModalWindowsManager(
+    modalState: ModalState,
+    onDismiss: () -> Unit,
+    onNavigate: (String) -> Unit,
+    bottomSheetState: SheetState,
+    scope: CoroutineScope,
+    onBottomSheetDismiss: () -> Unit,
+    onSubmitSolution: () -> Unit, // Добавлен параметр
+    testCases: List<TestCase>,
+    description: String
+) {
+    // Диалоги
+    when (modalState) {
+        ModalState.FINISH_TASK -> {
+            CustomInfoDialog(
+                showDialog = true,
+                onDismiss = onDismiss,
+                onNavigateToInfo = { onNavigate("task_details") },
+                title = "Закончить?",
+                text = "Завершить выполнение задачи?"
+            )
+        }
+
+        ModalState.SUBMIT_CODE -> {
+            CustomInfoDialog(
+                showDialog = true,
+                onDismiss = onDismiss,
+                onNavigateToInfo = {
+                    onSubmitSolution() // Вызываем функцию отправки
+                },
+                title = "Отправить код на проверку?",
+                text = "Уверены?"
+            )
+        }
+
+        ModalState.TESTS_BOTTOM_SHEET -> {
+            TestsBottomSheet(
+                sheetState = bottomSheetState,
+                onDismiss = {
+                    scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
+                        if (!bottomSheetState.isVisible) {
+                            onDismiss()
+                            onBottomSheetDismiss()
+                        }
+                    }
+                },
+                onViewDetails = {
+                    scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
+                        if (!bottomSheetState.isVisible) {
+                            onDismiss()
+                            onNavigate("test_details")
+                        }
+                    }
+                },
+                description,
+                testCases
+            )
+        }
+
+        else -> {}
+    }
+}
+
 
 // Вынесенные компоненты для лучшей читаемости
 
@@ -158,70 +455,15 @@ private fun TimerText() {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ModalWindowsManager(
-    modalState: ModalState,
-    onDismiss: () -> Unit,
-    onNavigate: (String) -> Unit,
-    bottomSheetState: SheetState,
-    scope: CoroutineScope,
-    onBottomSheetDismiss: () -> Unit
-) {
-    // Диалоги
-    when (modalState) {
-        ModalState.FINISH_TASK -> {
-            CustomInfoDialog(
-                showDialog = true,
-                onDismiss = onDismiss,
-                onNavigateToInfo = { onNavigate("task_details") },
-                title = "Закончить?",
-                text = "Завершить выполнение задачи?"
-            )
-        }
-
-        ModalState.SUBMIT_CODE -> {
-            CustomInfoDialog(
-                showDialog = true,
-                onDismiss = onDismiss,
-                onNavigateToInfo = { onNavigate("task_details") },
-                title = "Отправить код на проверку?",
-                text = "Уверены?"
-            )
-        }
-
-        ModalState.TESTS_BOTTOM_SHEET -> {
-            TestsBottomSheet(
-                sheetState = bottomSheetState,
-                onDismiss = {
-                    scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
-                        if (!bottomSheetState.isVisible) {
-                            onDismiss()
-                            onBottomSheetDismiss()
-                        }
-                    }
-                },
-                onViewDetails = {
-                    scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
-                        if (!bottomSheetState.isVisible) {
-                            onDismiss()
-                            onNavigate("test_details")
-                        }
-                    }
-                }
-            )
-        }
-
-        else -> {}
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TestsBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onViewDetails: () -> Unit
+    onViewDetails: () -> Unit,
+    description: String,
+    testCases: List<TestCase>
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -233,10 +475,8 @@ private fun TestsBottomSheet(
         }
     ) {
         TrainBottomSheetContent(
-            description = "sfnlkjsfklbdskfbkldfgbslgdhb",
-            onClose = onDismiss,
-            onRunTest = { /* Запустить тест */ },
-            onViewDetails = onViewDetails
+            description = description,
+            testCases
         )
     }
 }
@@ -264,9 +504,7 @@ private fun DragHandle() {
 @Composable
 fun TrainBottomSheetContent(
     description: String,
-    onClose: () -> Unit,
-    onRunTest: () -> Unit,
-    onViewDetails: () -> Unit
+    testCases: List<TestCase>
 ) {
     Column(
         modifier = Modifier
@@ -280,17 +518,13 @@ fun TrainBottomSheetContent(
 
         SectionTitle("Пример теста")
 
-        // Тестовые карточки
-        repeat(3) {
-            CardTest("2 3", "5")
+        LazyColumn {
+            items(testCases) {
+                if (!it.isExample) {
+                    CardTest(it.input, it.output)
+                }
+            }
         }
-
-        // Кнопки действий
-        ActionButtons(
-            onClose = onClose,
-            onRunTest = onRunTest,
-            onViewDetails = onViewDetails
-        )
     }
 }
 
@@ -316,53 +550,21 @@ private fun SectionText(text: String) {
     )
 }
 
+
 @Composable
-private fun ActionButtons(
-    onClose: () -> Unit,
-    onRunTest: () -> Unit,
-    onViewDetails: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        OutlinedButton(
-            onClick = onClose,
-            modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color.White,
-                containerColor = Color.Transparent
-            )
-        ) {
-            Text("Закрыть")
-        }
-
-        Button(
-            onClick = onRunTest,
-            modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF53C2C3)
-            )
-        ) {
-            Text("Запустить тест")
-        }
-
-        Button(
-            onClick = onViewDetails,
-            modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4CAF50)
-            )
-        ) {
-            Text("Подробнее")
-        }
+fun getCodeLang(languageTitle: String): CodeLang {
+    Log.d("getCodeLang", languageTitle)
+    return when (languageTitle) {
+        "Java" -> CodeLang.Java
+        "Python" -> CodeLang.Python
+        "C" -> CodeLang.C
+        "C#" -> CodeLang.CSharp
+        else -> CodeLang.Markdown
     }
 }
 
 @Preview
 @Composable
 fun TrainScreenPreview() {
-    TrainScreen({}, {})
+    TrainScreen({}, "")
 }

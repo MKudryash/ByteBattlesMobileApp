@@ -7,7 +7,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -21,44 +25,46 @@ import com.example.bytebattlesmobileapp.presentation.screens.Achievement
 @Composable
 fun AchievementsGrid(
     achievements: List<Achievement>,
-    modifier: Modifier = Modifier.Companion
+    modifier: Modifier = Modifier
 ) {
     // Разбиваем список на группы по 3 элемента
     val groupedAchievements = achievements.chunked(3)
 
-    LazyColumn(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.Center
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(1),
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         itemsIndexed(groupedAchievements) { index, group ->
-            Row(
-                modifier = Modifier.Companion
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                group.forEach { achievement ->
-                    CardAchievements(
-                        painter = painterResource(achievement.iconRes),
-                        achievement.title,
-                        modifier = Modifier.Companion.weight(1f)
-                    )
-                }
+            // Добавляем разделитель перед всеми элементами, кроме первого
+            if (index > 0) {
 
-                repeat(3 - group.size) {
-                    Spacer(modifier = Modifier.Companion.weight(1f))
-                }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(Color(0xFF5EC2C3))
+                    )
+
             }
 
-            Spacer(Modifier.Companion.height(5.dp))
+            // Контент группы
 
-            Box(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(color = Color(0xFF5EC2C3),)
-            )
-            Spacer(Modifier.Companion.height(15.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp), // Добавляем вертикальные отступы
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    group.forEach { achievement ->
+                        CardAchievements(
+                            painter = painterResource(achievement.iconRes),
+                            achievement.title,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
 
         }
     }

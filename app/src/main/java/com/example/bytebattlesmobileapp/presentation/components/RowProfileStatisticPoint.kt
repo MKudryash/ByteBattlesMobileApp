@@ -26,15 +26,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bytebattlesmobileapp.R
+import com.example.bytebattlesmobileapp.domain.model.Activities
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import kotlin.compareTo
 
 
 @Composable
 fun RowProfileStatisticPoint(
-    statisticPoints: List<StatisticPoint>
+    statisticPoints: List<Activities>
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
 
         Row(
             modifier = Modifier
@@ -85,14 +86,16 @@ fun RowProfileStatisticPoint(
                 RowStatisticItem(point = point)
             }
         }
-    }
+
 }
 
 @Composable
 fun RowStatisticItem(
-    point: StatisticPoint,
+    point: Activities,
     modifier: Modifier = Modifier
 ) {
+    var color =  if (point.experienceGained!!>0) Color(0xFF4CAF50) else Color(0xFFF44336)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -103,12 +106,13 @@ fun RowStatisticItem(
             fontWeight = FontWeight.Bold,
             fontSize = 10.sp,
             color =
-                if (point.isSuccess) Color(0xFF4CAF50) else Color(0xFFF44336),
+               color,
             fontFamily = FontFamily(Font(R.font.ibmplexmono_regular)),
         )
+        val date = LocalDate.parse(point.timestamp!!.substringBefore("T"))
         // Дата
         Text(
-            text = point.data,
+            text = date.toString(),
             style = style,
             modifier = Modifier.weight(0.2f)
         )
@@ -117,7 +121,7 @@ fun RowStatisticItem(
 
         // Задача
         Text(
-            text = point.taskName,
+            text = point.title.toString(),
             style = style,
             modifier = Modifier.weight(0.4f),
             maxLines = 1,
@@ -128,7 +132,7 @@ fun RowStatisticItem(
 
         // Тип
         Text(
-            text = point.typeMode,
+            text = point.type.toString(),
             style = style,
             modifier = Modifier.weight(0.25f)
         )
@@ -141,9 +145,10 @@ fun RowStatisticItem(
             modifier = Modifier.weight(0.15f)
         ) {
             Text(
-                text = if (point.point > 0) "+${point.point}" else point.point.toString(),
+                text = if (point.experienceGained > 0) "+${point.experienceGained}" else point.experienceGained.toString(),
                 fontSize = 13.sp,
-                color = if (point.isSuccess) Color(0xFF4CAF50) else Color(0xFFF44336),
+                color =
+                   color,
                 fontWeight = FontWeight.Medium
             )
         }
@@ -154,13 +159,5 @@ fun RowStatisticItem(
 @Preview
 @Composable
 fun RowProfileStatisticPointPreview() {
-    RowProfileStatisticPoint(
-        listOf(StatisticPoint(
-            "12.12.1990", "Summa", "Turnir",
-            10, true
-        ),  StatisticPoint(
-            "12.12.1990", "Summa", "Turnir",
-            0, false
-        ))
-    )
+
 }

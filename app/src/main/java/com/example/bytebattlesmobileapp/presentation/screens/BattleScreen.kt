@@ -40,7 +40,7 @@ import com.example.bytebattlesmobileapp.presentation.components.TopAppBarCompone
 @Composable
 fun BattleScreen(
     onNavigateBack: () -> Unit,
-    onNavigateTrain: () -> Unit,
+    onNavigateTrain: (String) -> Unit,
     onNavigateLobby:()->Unit
 ) {
     var selectedLanguage by remember { mutableStateOf(0) }

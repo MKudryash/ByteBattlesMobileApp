@@ -1,5 +1,6 @@
 package com.example.bytebattlesmobileapp.presentation.screens
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -48,7 +49,7 @@ import java.util.UUID
 fun TaskInfoScreen(
     taskId: String,
     onNavigateBack: () -> Unit,
-    onNavigateTrain: () -> Unit,
+    onNavigateTrain: (String) -> Unit,
     viewModel: TaskViewModel = hiltViewModel()
 ) {
 
@@ -167,7 +168,9 @@ fun TaskInfoScreen(
                         ) {
                             ActionButton(
                                 text = "Начать".uppercase(),
-                                onClick = { onNavigateTrain()},
+                                onClick = {
+                                    Log.d("INFO", task.id)
+                                    onNavigateTrain(task.id)},
                                 color = Color(0xFF5EC2C3),
                                 modifier = Modifier
                                     .fillMaxWidth(0.8f)

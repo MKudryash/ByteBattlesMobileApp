@@ -5,6 +5,7 @@ import com.example.bytebattlesmobileapp.data.datasource.remote.TokenManager
 import com.example.bytebattlesmobileapp.data.interceptors.AuthInterceptor
 import com.example.bytebattlesmobileapp.data.network.*
 import com.example.bytebattlesmobileapp.data.repository.AuthRepositoryImpl
+import com.example.bytebattlesmobileapp.data.repository.SolutionRepositoryImpl
 import com.example.bytebattlesmobileapp.data.repository.TaskRepositoryImpl
 import com.example.bytebattlesmobileapp.data.repository.UserRepositoryImpl
 import com.example.bytebattlesmobileapp.domain.repository.*
@@ -186,6 +187,14 @@ object AppModule {
         return UserApiServiceImpl(client)
     }
 
+    @Provides
+    @Singleton
+    fun provideSolutionApiService(
+        @Named("authenticatedHttpClient") client: HttpClient  // Добавьте @Named аннотацию
+    ): SolutionApiService {
+        return SolutionApiServiceImpl(client)
+    }
+
     // Репозитории
     @Provides
     @Singleton
@@ -210,6 +219,14 @@ object AppModule {
         userApi: UserApiService
     ): UserRepository {
         return UserRepositoryImpl(userApi)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSolutionRepository(
+        solutionApi: SolutionApiService
+    ): SolutionRepository {
+        return SolutionRepositoryImpl(solutionApi)
     }
 }
 
@@ -265,22 +282,28 @@ object UseCaseModule {
         return GetLeaderBordUseCase(repository)
     }
 
- @Provides
+    @Provides
     @Singleton
     fun provideGetUserProfileUseCaseCase(repository: UserRepository): GetUserProfileUseCase {
         return GetUserProfileUseCase(repository)
     }
 
- @Provides
+    @Provides
     @Singleton
     fun provideUpdateProfileUseCase(repository: UserRepository): UpdateProfileUseCase {
         return UpdateProfileUseCase(repository)
     }
 
- @Provides
+    @Provides
     @Singleton
-    fun provideGetUserStatsUseCase(repository: UserRepository): GetUserStatsUseCase {
-        return GetUserStatsUseCase(repository)
+    fun provideGetUserActivitiesUseCase(repository: UserRepository): GetUserActivitiesUseCase {
+        return GetUserActivitiesUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun providerSubmitSolutionUseCase(repository: SolutionRepository): SubmitSolutionUseCase {
+        return SubmitSolutionUseCase(repository)
     }
 
 

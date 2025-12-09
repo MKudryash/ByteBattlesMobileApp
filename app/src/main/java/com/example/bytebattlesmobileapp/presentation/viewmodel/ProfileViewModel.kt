@@ -4,10 +4,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bytebattlesmobileapp.R
+import com.example.bytebattlesmobileapp.domain.model.Activities
+import com.example.bytebattlesmobileapp.domain.model.UserLeader
 import com.example.bytebattlesmobileapp.domain.usecase.GetLeaderBordUseCase
+import com.example.bytebattlesmobileapp.domain.usecase.GetUserActivitiesUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetUserProfileUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetUserStatsUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.UpdateProfileUseCase
+import com.example.bytebattlesmobileapp.presentation.viewmodel.LeaderboardViewModel.LeaderboardUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +23,7 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
+    private val getUserActivitiesUseCase: GetUserActivitiesUseCase
 ) : ViewModel() {
     sealed class ProfileUiState {
         data object Loading : ProfileUiState()
@@ -26,8 +31,17 @@ class ProfileViewModel @Inject constructor(
         data class Success(val data: ProfileScreenData) : ProfileUiState()
         data class Error(val message: String) : ProfileUiState()
     }
+    sealed class ActivitiesUIState {
+        data object Loading : ActivitiesUIState()
+        data object Empty : ActivitiesUIState()
+        data class Success(val data: List<Activities>) : ActivitiesUIState()
+        data class Error(val message: String) : ActivitiesUIState()
+    }
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+
+    private val _uiStateActivities = MutableStateFlow<ActivitiesUIState>(ActivitiesUIState.Loading)
+    val uiStateActivities: StateFlow<ActivitiesUIState> = _uiStateActivities.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -37,8 +51,29 @@ class ProfileViewModel @Inject constructor(
 
     init {
         loadProfileData()
+        loadActivities()
     }
+    fun loadActivities() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _uiStateActivities.value = ActivitiesUIState.Loading
 
+            try {
+                val activities = getUserActivitiesUseCase()
+
+                if (activities.isEmpty()) {
+                    _uiStateActivities.value = ActivitiesUIState.Empty
+                } else {
+                    _uiStateActivities.value = ActivitiesUIState.Success(activities)
+                }
+            } catch (e: Exception) {
+                Log.e("Leader", e.message.toString())
+                _uiStateActivities.value = ActivitiesUIState.Error("Ошибка загрузки активностей: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
     fun loadProfileData() {
         viewModelScope.launch {
             _isLoading.value = true

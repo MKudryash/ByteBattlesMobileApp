@@ -62,7 +62,7 @@ fun CustomInfoDialog(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     OutlinedButton(
-                        onClick = onNavigateToInfo,
+                        onClick = onDismiss,
                         modifier = Modifier.Companion.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Companion.White
@@ -80,7 +80,8 @@ fun CustomInfoDialog(
                     Spacer(modifier = Modifier.Companion.width(8.dp))
 
                     Button(
-                        onClick = onDismiss,
+                        onClick = {onNavigateToInfo()
+                                  onDismiss()},
                         modifier = Modifier.Companion.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF53C2C3)

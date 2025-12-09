@@ -3,14 +3,15 @@ package com.example.bytebattlesmobileapp.presentation.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.bytebattlesmobileapp.data.network.dto.task.LanguageDto
 import com.example.bytebattlesmobileapp.domain.model.Language
+import com.example.bytebattlesmobileapp.domain.model.Solution
 import com.example.bytebattlesmobileapp.domain.model.Task
 import com.example.bytebattlesmobileapp.domain.usecase.GetLanguageByIdUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetLanguagesUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetTaskByIdUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetTasksUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetTasksWithPaginationUseCase
+import com.example.bytebattlesmobileapp.domain.usecase.SubmitSolutionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,6 @@ import javax.inject.Inject
 import kotlin.collections.forEachIndexed
 import kotlin.collections.isNotEmpty
 import kotlin.collections.plus
-import kotlin.math.exp
 import kotlin.toString
 
 
@@ -31,7 +31,8 @@ class TaskViewModel @Inject constructor(
     private val getTaskByIdUseCase: GetTaskByIdUseCase,
     private val getTasksWithPaginationUseCase: GetTasksWithPaginationUseCase,
     private val getLanguagesUseCase: GetLanguagesUseCase,
-    private val getLanguageByIdUseCase: GetLanguageByIdUseCase
+    private val getLanguageByIdUseCase: GetLanguageByIdUseCase,
+    private val submitSolutionUseCase: SubmitSolutionUseCase,
 ) : ViewModel() {
 
     // Состояния загрузки задач
@@ -55,6 +56,10 @@ class TaskViewModel @Inject constructor(
     private val _languages = MutableStateFlow<List<Language>>(emptyList())
     val languages: StateFlow<List<Language>> = _languages.asStateFlow()
 
+
+
+    private val _submitState = MutableStateFlow<SubmitSolutionState>(SubmitSolutionState.Idle)
+    val submitState: StateFlow<SubmitSolutionState> = _submitState.asStateFlow()
 
 
     // Пагинация
@@ -99,6 +104,26 @@ class TaskViewModel @Inject constructor(
             }
         }
     }
+    fun submitSolution(
+        code: String,
+        languageId: String,
+        taskId: String
+    ) = viewModelScope.launch {
+        _submitState.value = SubmitSolutionState.Loading
+        try {
+            val solution = submitSolutionUseCase(code = code,languageId = languageId, taskId =taskId)
+            _submitState.value = SubmitSolutionState.Success(solution)
+
+
+
+        } catch (e: Exception) {
+            _submitState.value = SubmitSolutionState.Error(
+                error = e.message ?: "Неизвестная ошибка при отправке решения"
+            )
+            Log.e("TaskViewModel", "Error submitting solution: ${e.message}", e)
+        }
+    }
+
     fun loadInitialTasks(
         searchTerm: String? = null,
         difficulty: String? = null,
@@ -234,6 +259,18 @@ class TaskViewModel @Inject constructor(
     fun clearTasks() {
         _tasksState.value = TaskState.Loading
     }
+    fun clearSubmitState() {
+        _submitState.value = SubmitSolutionState.Idle
+    }
+
+
+    sealed class SubmitSolutionState {
+        object Idle : SubmitSolutionState()
+        object Loading : SubmitSolutionState()
+        data class Success(val solution: Solution) : SubmitSolutionState()
+        data class Error(val error: String) : SubmitSolutionState()
+    }
+
 
     // Sealed классы для состояний
     sealed class TaskState {

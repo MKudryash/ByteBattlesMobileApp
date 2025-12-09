@@ -6,7 +6,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.bytebattlesmobileapp.presentation.components.SideMenu
 import com.example.bytebattlesmobileapp.presentation.screens.*
 
 @Composable
@@ -54,7 +53,6 @@ fun AppNavigation(navController: NavHostController) {
                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
                 onNavigateToBattle = { navController.navigate(Screen.Battle.route) },
                 onNavigateToStatistics = { navController.navigate(Screen.Statistics.route) },
-                onNavigateToTrain = { navController.navigate(Screen.Train.route) },
                 onNavigateToNewStorm = { navController.navigate(Screen.NewStorm.route) }
             )
         }
@@ -87,7 +85,8 @@ fun AppNavigation(navController: NavHostController) {
         composable(Screen.Battle.route) {
             BattleScreen(
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateTrain = { navController.navigate(Screen.Train.route) },
+                onNavigateTrain = {taskId ->
+                    navController.navigate(Screen.Train.createRoute(taskId))},
                 onNavigateLobby = { navController.navigate(Screen.BattleLobby.route) }
             )
         }
@@ -106,22 +105,22 @@ fun AppNavigation(navController: NavHostController) {
             TaskInfoScreen(
                 taskId = taskId,
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateTrain = { navController.navigate(Screen.Train.route) },
+                onNavigateTrain = {taskId ->
+                    navController.navigate(Screen.Train.createRoute(taskId))},
             )
         }
 
-        composable(Screen.Train.route) {
+        composable(Screen.Train.route,
+            arguments = listOf(navArgument("taskId") { type = NavType.StringType })) {backStackEntry ->
+            val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
             TrainScreen(
-                onNavigateToTrainInfo = { trainId ->
-                    navController.navigate(Screen.TrainInfo.createRoute(trainId))
-                },
                 onNavigateBack = {
-                    // Возвращаемся к последнему экрану с панелью
                     navController.popBackStack(
                         route = Screen.Main.route,
                         inclusive = false
                     ) ?: navController.navigate(Screen.Main.route)
-                }
+                },
+                taskId = taskId
             )
         }
 

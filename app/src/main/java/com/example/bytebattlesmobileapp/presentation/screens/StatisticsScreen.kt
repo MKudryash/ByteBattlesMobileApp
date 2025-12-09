@@ -1,14 +1,23 @@
 package com.example.bytebattlesmobileapp.presentation.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -32,9 +42,14 @@ import com.example.bytebattlesmobileapp.R
 import com.example.bytebattlesmobileapp.presentation.components.AchievementsGrid
 import com.example.bytebattlesmobileapp.presentation.components.CardProfileStatistic
 import com.example.bytebattlesmobileapp.presentation.components.RowProfileStatisticPoint
+import com.example.bytebattlesmobileapp.presentation.components.RowStatisticItem
 import com.example.bytebattlesmobileapp.presentation.components.StatisticPoint
 import com.example.bytebattlesmobileapp.presentation.components.UserHeader
+import com.example.bytebattlesmobileapp.presentation.components.UserTopCard
+import com.example.bytebattlesmobileapp.presentation.viewmodel.LeaderboardViewModel
 import com.example.bytebattlesmobileapp.presentation.viewmodel.ProfileViewModel
+
+
 
 @Composable
 fun StatisticsScreen(
@@ -45,88 +60,100 @@ fun StatisticsScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
+    val activitiesUiState by viewModel.uiStateActivities.collectAsStateWithLifecycle()
+
     var username by remember { mutableStateOf("") }
-    var points: String? by remember { mutableStateOf("") }
+    var points: Int? by remember { mutableStateOf(0) }
     var loses: Int? by remember { mutableStateOf(0) }
     var wins: Int? by remember { mutableStateOf(0) }
     var maxStreak: Int? by remember { mutableStateOf(0) }
-    var procent: Double? by remember { mutableStateOf(0.0) }
+    var winRate: Double? by remember { mutableStateOf(0.0) }
+
     // Заполняем поля при загрузке данных
     LaunchedEffect(uiState) {
         if (uiState is ProfileViewModel.ProfileUiState.Success) {
             val data = (uiState as ProfileViewModel.ProfileUiState.Success).data
+            Log.d("USER", data.stats.toString())
             username = data.profile.userName
-            points = data.stats?.totalExperience.toString()
+            points = data.stats?.totalExperience
             wins = data.stats?.wins
             loses = data.stats?.losses
             maxStreak = data.stats?.maxStreak
-            val procentDouble = wins?.let{it-> loses?.let {it1->
-                if (it + it1 > 0) {
-                    it.toDouble() / (it + it1).toDouble() * 100.0
-                } else {
-                    0.0
-                }
-            }
-            }
+            winRate = data.stats?.winRate
         }
+    }
+
+    LaunchedEffect(activitiesUiState) {
+        viewModel.loadActivities()
     }
 
     // Обработка ошибок
     error?.let { errorMessage ->
         LaunchedEffect(errorMessage) {
             // Показать Snackbar
-
         }
     }
-    Column(
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF2C3646))
     ) {
-        UserHeader(
-            username,
-            painter = painterResource(R.drawable.userprofile),
-            true
-        )
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 15.dp)
+                .fillMaxSize()
+                .background(Color(0xFF2C3646))
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    "Боевой профиль",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp,
-                    fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
-                )
+            // Заголовок пользователя
+            UserHeader(
+                username,
+                painter = painterResource(R.drawable.userprofile),
+                true,
+            )
 
-                Text(
-                   "${points} очков ",
-                    color = Color.White,
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 14.sp,
-                    fontFamily = FontFamily(Font(R.font.ibmplexmono_regular)),
-                )
-
-
-            }
-            Spacer(Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-
-                CardProfileStatistic("✅ Победы", "$wins (${procent}%)")
-                CardProfileStatistic("⛔Поражения", "${loses}")
-                CardProfileStatistic("\uD83C\uDFF9 Лучшая серия", "${maxStreak} побед")
-            }
             Spacer(Modifier.height(25.dp))
+
+            // Боевой профиль
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        "Боевой профиль",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp,
+                        fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
+                    )
+
+                    Text(
+                        "$points очков ",
+                        color = Color.White,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 14.sp,
+                        fontFamily = FontFamily(Font(R.font.ibmplexmono_regular)),
+                    )
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    CardProfileStatistic("✅ Победы", "$wins (${winRate}%)")
+                    CardProfileStatistic("⛔Поражения", "${loses}")
+                    CardProfileStatistic("\uD83C\uDFF9 Лучшая серия", "${maxStreak} побед")
+                }
+
+                Spacer(Modifier.height(25.dp))
+            }
+
+            // История очков
             Text(
                 "История очков",
                 color = Color.White,
@@ -134,18 +161,144 @@ fun StatisticsScreen(
                 fontSize = 24.sp,
                 fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
             )
+
             Spacer(Modifier.height(15.dp))
 
-            RowProfileStatisticPoint(
-                listOf(StatisticPoint(
-                    "12.12.1990", "Summa", "Turnir",
-                    10, true
-                ),  StatisticPoint(
-                    "12.12.1990", "Summa", "Turnir",
-                    0, false
-                ))
-            )
+            // Состояния загрузки истории очков
+            when (activitiesUiState) {
+                ProfileViewModel.ActivitiesUIState.Empty -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Список активностей пуст",
+                            color = Color.Gray,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+
+                is ProfileViewModel.ActivitiesUIState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Ошибка загрузки",
+                                color = Color.Red,
+                                fontSize = 16.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Попробуйте позже",
+                                color = Color.Gray,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+
+                ProfileViewModel.ActivitiesUIState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color(0xFF5EC2C3))
+                    }
+                }
+
+                is ProfileViewModel.ActivitiesUIState.Success -> {
+                    val activities =
+                        (activitiesUiState as ProfileViewModel.ActivitiesUIState.Success).data
+
+                    if (activities.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Нет данных",
+                                color = Color.Gray,
+                                fontSize = 16.sp
+                            )
+                        }
+                    } else {
+                        // Используем LazyColumn только для списка активностей
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 400.dp)
+                        ) {
+                            item {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            vertical = 8.dp,
+                                            horizontal = 5.dp
+                                        ), // такой же padding как у элементов
+                                ) {
+                                    val style = TextStyle(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = Color.White,
+                                        fontFamily = FontFamily(Font(R.font.ibmplexmono_regular)),
+                                    )
+                                    Text(
+                                        modifier = Modifier.weight(0.2f), // СОВПАДАЕТ с первым столбцом
+                                        text = "Дата",
+                                        style = style
+
+                                    )
+
+                                    Spacer(modifier = Modifier.width(4.dp))
+
+                                    Text(
+                                        modifier = Modifier.weight(0.4f), // СОВПАДАЕТ со вторым столбцом
+                                        text = "Задача",
+                                        style = style
+                                    )
+
+                                    Spacer(modifier = Modifier.width(4.dp))
+
+                                    Text(
+                                        modifier = Modifier.weight(0.15f), // СОВПАДАЕТ с третьим столбцом
+                                        text = "Тип",
+                                        style = style
+                                    )
+
+                                    Spacer(modifier = Modifier.width(4.dp))
+
+                                    Text(
+                                        modifier = Modifier.weight(0.25f),
+                                        text = "Начислено",
+                                        style = style
+                                    )
+                                }
+                            }
+
+                            items(activities.take(10)) { activity ->
+                                RowStatisticItem(point = activity)
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(Modifier.height(25.dp))
+
+            // Достижения
             Text(
                 "Достижения",
                 color = Color.White,
@@ -153,7 +306,10 @@ fun StatisticsScreen(
                 fontSize = 24.sp,
                 fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
             )
+
             Spacer(Modifier.height(15.dp))
+
+            // Сетка достижений - исправленная версия
             val achievements = listOf(
                 Achievement(R.drawable.firstblood, "Первая кровь"),
                 Achievement(R.drawable.firstblood, "Быстрый ученик"),
@@ -164,7 +320,16 @@ fun StatisticsScreen(
                 Achievement(R.drawable.firstblood, "Инноватор"),
                 Achievement(R.drawable.firstblood, "Легенда")
             )
-            AchievementsGrid(achievements)
+
+            // Добавляем ограничение по высоте для сетки достижений
+            AchievementsGrid(
+                achievements = achievements,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 200.dp, max = 400.dp)
+            )
+
+            Spacer(Modifier.height(25.dp))
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.example.bytebattlesmobileapp.domain.repository
 
+import com.example.bytebattlesmobileapp.data.network.dto.ActivitiesDto
 import com.example.bytebattlesmobileapp.data.network.dto.user.UpdateProfileRequest
+import com.example.bytebattlesmobileapp.domain.model.Activities
 import com.example.bytebattlesmobileapp.domain.model.User
 import com.example.bytebattlesmobileapp.domain.model.UserLeader
 import com.example.bytebattlesmobileapp.domain.model.UserProfile
@@ -11,4 +13,5 @@ interface UserRepository {
     suspend fun updateProfile(request: UpdateProfileRequest): UserProfile
     suspend fun getUserStats(userId: String): UserStats
     suspend fun getLeaderBord():List<UserLeader>
+    suspend fun getRecentActivities():List<Activities>
 }

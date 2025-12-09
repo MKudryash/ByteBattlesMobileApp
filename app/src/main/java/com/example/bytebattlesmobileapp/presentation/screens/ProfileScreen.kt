@@ -140,7 +140,7 @@ fun ProfileScreen(
                                     )
                                     Spacer(Modifier.height(15.dp))
                                     Text(
-                                        "${data.profile.userName}",
+                                        data.profile.userName,
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 24.sp,

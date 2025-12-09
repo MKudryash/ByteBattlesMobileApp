@@ -56,7 +56,6 @@ fun MainScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToBattle: () -> Unit,
     onNavigateToStatistics: () -> Unit,
-    onNavigateToTrain: () -> Unit,
     onNavigateToNewStorm: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel(),
     leaderboardViewModel: LeaderboardViewModel = hiltViewModel()
@@ -251,7 +250,6 @@ fun MainScreenPreview() {
         onNavigateToProfile = {},
         onNavigateToBattle = {},
         onNavigateToStatistics = {},
-        onNavigateToTrain = {},
         onNavigateToNewStorm = {}
     )
 }

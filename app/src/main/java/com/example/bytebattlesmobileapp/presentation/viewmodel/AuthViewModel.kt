@@ -7,6 +7,7 @@ import com.example.bytebattlesmobileapp.domain.model.User
 import com.example.bytebattlesmobileapp.domain.usecase.LoginUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.RegisterUseCase
 import com.example.bytebattlesmobileapp.domain.repository.AuthRepository
+import com.example.bytebattlesmobileapp.domain.usecase.GetUserActivitiesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -42,7 +43,7 @@ data class AuthUIState(
 class AuthViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
     private val registerUseCase: RegisterUseCase,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUIState())
