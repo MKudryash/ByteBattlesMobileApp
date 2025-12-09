@@ -5,6 +5,7 @@ import com.example.bytebattlesmobileapp.data.datasource.remote.TokenManager
 import com.example.bytebattlesmobileapp.data.interceptors.AuthInterceptor
 import com.example.bytebattlesmobileapp.data.network.*
 import com.example.bytebattlesmobileapp.data.repository.AuthRepositoryImpl
+import com.example.bytebattlesmobileapp.data.repository.BattleRepositoryImpl
 import com.example.bytebattlesmobileapp.data.repository.SolutionRepositoryImpl
 import com.example.bytebattlesmobileapp.data.repository.TaskRepositoryImpl
 import com.example.bytebattlesmobileapp.data.repository.UserRepositoryImpl
@@ -18,11 +19,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.*
 import io.ktor.client.engine.android.*
+import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.auth.*
 import io.ktor.client.plugins.auth.providers.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
+import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.header
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.json.Json
 import javax.inject.Named
 import javax.inject.Singleton
+
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -160,7 +164,42 @@ object AppModule {
             }
         }
     }
+    @Provides
+    @Singleton
+    @Named("webSocketClient")
+    fun provideWebSocketClient(
+        json: Json,
+        tokenManager: TokenManager,
+    ): HttpClient {
+        return HttpClient(CIO) { // CIO движок для WebSocket
+            install(WebSockets) {
+                maxFrameSize = Long.MAX_VALUE
+                pingInterval = 20_000 // Пинг каждые 20 секунд для поддержания соединения
+            }
 
+            install(HttpTimeout) {
+                connectTimeoutMillis = 10_000
+                requestTimeoutMillis = 30_000
+                socketTimeoutMillis = 10_000
+            }
+
+            install(ContentNegotiation) {
+                json(json)
+            }
+
+            if (BuildConfig.DEBUG) {
+                install(Logging) {
+                    logger = object : Logger {
+                        override fun log(message: String) {
+                            android.util.Log.d("Ktor-WebSocket", message)
+                        }
+                    }
+                    level = LogLevel.HEADERS
+                }
+
+            }
+        }
+    }
     // API сервисы - ВАЖНО: исправьте эти методы
     @Provides
     @Singleton
@@ -193,6 +232,15 @@ object AppModule {
         @Named("authenticatedHttpClient") client: HttpClient  // Добавьте @Named аннотацию
     ): SolutionApiService {
         return SolutionApiServiceImpl(client)
+    }
+    @Provides
+    @Singleton
+    fun provideBattleApiService(
+        @Named("webSocketClient") client: HttpClient,
+        json: Json,
+        tokenManager: TokenManager // Добавляем TokenManager
+    ): BattleApiService {
+        return BattleApiServiceImpl(client, json, tokenManager)
     }
 
     // Репозитории
@@ -228,7 +276,17 @@ object AppModule {
     ): SolutionRepository {
         return SolutionRepositoryImpl(solutionApi)
     }
+
+    @Provides
+    @Singleton
+    fun provideBattleRepository(
+        battleApi: BattleApiService
+    ): BattleRepository {
+        return BattleRepositoryImpl(battleApi)
+    }
 }
+
+
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -305,7 +363,59 @@ object UseCaseModule {
     fun providerSubmitSolutionUseCase(repository: SolutionRepository): SubmitSolutionUseCase {
         return SubmitSolutionUseCase(repository)
     }
+    @Provides
+    @Singleton
+    fun provideConnectBattleUseCase(repository: BattleRepository): ConnectBattleUseCase {
+        return ConnectBattleUseCase(repository)
+    }
 
+    @Provides
+    @Singleton
+    fun provideDisconnectBattleUseCase(repository: BattleRepository): DisconnectBattleUseCase {
+        return DisconnectBattleUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCreateRoomUseCase(repository: BattleRepository): CreateRoomUseCase {
+        return CreateRoomUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideJoinRoomUseCase(repository: BattleRepository): JoinRoomUseCase {
+        return JoinRoomUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideToggleReadyUseCase(repository: BattleRepository): ToggleReadyUseCase {
+        return ToggleReadyUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSubmitCodeUseCase(repository: BattleRepository): SubmitCodeUseCase {
+        return SubmitCodeUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLeaveRoomUseCase(repository: BattleRepository): LeaveRoomUseCase {
+        return LeaveRoomUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetBattleMessagesUseCase(repository: BattleRepository): GetBattleMessagesUseCase {
+        return GetBattleMessagesUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetBattleConnectionStateUseCase(repository: BattleRepository): GetBattleConnectionStateUseCase {
+        return GetBattleConnectionStateUseCase(repository)
+    }
 
 }
 

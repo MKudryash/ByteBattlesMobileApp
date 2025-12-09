@@ -17,8 +17,17 @@ sealed class Screen(val route: String, val screenType: ScreenType) {
     object Profile : Screen("profile", ScreenType.WithBottomNav)
     object Statistics : Screen("statistics", ScreenType.WithBottomNav)
 
-    object Battle : Screen("battle", ScreenType.WithoutBottomNav)
-    object BattleLobby : Screen("battle_lobby", ScreenType.WithoutBottomNav)
+    // Битва - один экран с различными состояниями
+    object Battle : Screen("battle?roomId={roomId}",ScreenType.WithoutBottomNav) {
+        fun createRoute(roomId: String? = null): String {
+            return "battle?roomId=${roomId ?: ""}"
+        }
+    }
+    object TrainBattle:Screen("battle_game/{taskId}",ScreenType.WithoutBottomNav){
+        fun createRoute(taskId: String): String {
+            return "battle_game/$taskId"
+        }
+    }
     object NewStorm : Screen("new_storm", ScreenType.WithoutBottomNav)
     object TaskInfo : Screen("task_info/{taskId}", ScreenType.WithoutBottomNav) {
         fun createRoute(taskId: String) = "task_info/$taskId"

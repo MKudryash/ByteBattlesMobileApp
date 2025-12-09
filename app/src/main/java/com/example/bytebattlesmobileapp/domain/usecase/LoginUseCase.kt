@@ -19,30 +19,6 @@ class RegisterUseCase(private val repository: AuthRepository) {
     }
 }
 
-// Battle Use Cases
-class CreateBattleRoomUseCase(private val repository: BattleRepository) {
-    suspend operator fun invoke(name: String, languageId: UUID, difficulty: BattleDifficulty): BattleRoom {
-        return repository.createBattleRoom(name, languageId, difficulty)
-    }
-}
-
-class JoinBattleRoomUseCase(private val repository: BattleRepository) {
-    suspend operator fun invoke(roomId: UUID): BattleRoom {
-        return repository.joinBattleRoom(roomId)
-    }
-}
-
-class ToggleReadyStatusUseCase(private val repository: BattleRepository) {
-    suspend operator fun invoke(roomId: UUID, isReady: Boolean) {
-        repository.toggleReadyStatus(roomId, isReady)
-    }
-}
-
-class SubmitBattleCodeUseCase(private val repository: BattleRepository) {
-    suspend operator fun invoke(roomId: UUID, taskId: UUID, code: String, languageId: UUID): CodeSubmission {
-        return repository.submitBattleCode(roomId, taskId, code, languageId)
-    }
-}
 
 // Task Use Cases
 class GetTasksWithPaginationUseCase(private val repository: TaskRepository) {

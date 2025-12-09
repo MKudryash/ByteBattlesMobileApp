@@ -458,7 +458,7 @@ private fun TimerText() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TestsBottomSheet(
+ fun TestsBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
     onViewDetails: () -> Unit,

@@ -81,18 +81,45 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
-        // Экран без панели навигации
-        composable(Screen.Battle.route) {
-            BattleScreen(
+        composable(
+            Screen.Battle.route,
+            arguments = listOf(
+                navArgument("roomId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val roomId = backStackEntry.arguments?.getString("roomId")
+
+            BattleContainerScreen(
+                navController = navController,
+                initialRoomId = roomId,
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateTrain = {taskId ->
-                    navController.navigate(Screen.Train.createRoute(taskId))},
-                onNavigateLobby = { navController.navigate(Screen.BattleLobby.route) }
+                onNavigateToGame = { taskId ->
+                    // Переходим на экран TrainBattle с taskId
+                    navController.navigate(Screen.TrainBattle.createRoute(taskId)) {
+                        // Закрываем весь стек битвы
+                        popUpTo(Screen.Battle.route) {
+                            inclusive = true
+                        }
+                    }
+                }
             )
         }
-        composable(Screen.BattleLobby.route) {
-            BattleLobbyScreen(
-                onNavigateBack = { navController.navigateUp() },
+        composable(
+            Screen.TrainBattle.route,
+            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
+            TrainBattleScreen(
+                onNavigateBack = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(0)
+                    }
+                },
+                taskId = taskId
             )
         }
 

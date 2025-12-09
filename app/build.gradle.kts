@@ -55,7 +55,6 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.room.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -74,6 +73,7 @@ dependencies {
     implementation("io.ktor:ktor-client-logging:2.3.6")
     implementation("io.ktor:ktor-client-websockets:2.3.6")
     implementation("io.ktor:ktor-client-auth:2.3.6")
+    implementation("io.ktor:ktor-client-cio:2.3.6")
 
     // Сериализация JSON
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")

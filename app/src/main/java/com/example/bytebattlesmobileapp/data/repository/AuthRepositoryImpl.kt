@@ -8,8 +8,12 @@ import com.example.bytebattlesmobileapp.data.network.dto.auth.AuthResponse
 import com.example.bytebattlesmobileapp.data.network.dto.auth.RefreshTokenRequest
 import com.example.bytebattlesmobileapp.data.network.dto.auth.RegisterRequest
 import com.example.bytebattlesmobileapp.data.network.dto.battle.*
+import com.example.bytebattlesmobileapp.di.AuthException
 import com.example.bytebattlesmobileapp.domain.model.*
 import com.example.bytebattlesmobileapp.domain.repository.*
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 class AuthRepositoryImpl(
     private val authApi: AuthApiService,
@@ -17,13 +21,20 @@ class AuthRepositoryImpl(
 ) : AuthRepository {
 
     override suspend fun login(email: String, password: String): User {
-        val response = authApi.login(LoginRequest(email, password))
-        tokenManager.saveToken(response.accessToken, response.refreshToken)
-
-        Log.d("AuthRepositoryImpl", response.user.id)
-        Log.d("AuthRepositoryImpl", response.user.firstName)
-        Log.d("AuthRepositoryImpl", response.accessToken)
-        return response.toDomain()
+        try {
+            val response = authApi.login(LoginRequest(email, password))
+            tokenManager.saveToken(response.accessToken, response.refreshToken)
+            // Предполагается, что response содержит user информацию
+            return response.toDomain() // или другой способ получения User
+        } catch (e: UnknownHostException) {
+            throw AuthException("Нет подключения к интернету")
+        } catch (e: ConnectException) {
+            throw AuthException("Не удалось подключиться к серверу")
+        } catch (e: SocketTimeoutException) {
+            throw AuthException("Таймаут подключения")
+        } catch (e: Exception) {
+            throw AuthException("Ошибка авторизации: ${e.message}")
+        }
     }
 
     override suspend fun register(firstName: String, lastName:String, email: String, password: String, role: String): User {
