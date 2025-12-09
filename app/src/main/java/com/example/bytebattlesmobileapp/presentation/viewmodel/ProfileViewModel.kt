@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bytebattlesmobileapp.R
+import com.example.bytebattlesmobileapp.domain.usecase.GetLeaderBordUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetUserProfileUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetUserStatsUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.UpdateProfileUseCase
@@ -18,7 +19,6 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
-    private val getUserStatsUseCase: GetUserStatsUseCase
 ) : ViewModel() {
     sealed class ProfileUiState {
         data object Loading : ProfileUiState()

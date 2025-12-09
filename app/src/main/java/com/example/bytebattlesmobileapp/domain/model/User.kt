@@ -62,14 +62,14 @@ data class UserStats(
 
 data class UserLeader(
     val userId: String,
-    val username: String,
-    val avatarUrl: String,
-    val country: String,
-    val position: Int,
-    val totalExperience: Int,
-    val battlesWon: Int,
-    val problemsSolved: Int,
-    val level: String
+    val userName: String,
+    val avatarUrl: String?,
+    val country: String?,
+    val position: Int?,
+    val totalExperience: Int?,
+    val battlesWon: Int?,
+    val problemsSolved: Int?,
+    val level: String?
 )
 
 data class UserSettings(

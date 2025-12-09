@@ -83,11 +83,6 @@ fun RowProfileStatisticPoint(
         LazyColumn {
             items(statisticPoints) { point ->
                 RowStatisticItem(point = point)
-                Divider(
-                    color = Color.LightGray.copy(alpha = 0.5f),
-                    thickness = 0.5.dp,
-                    modifier = Modifier.padding(horizontal = 5.dp)
-                )
             }
         }
     }
@@ -101,7 +96,7 @@ fun RowStatisticItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp, horizontal = 5.dp),
+            .padding(vertical = 4.dp, horizontal = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val style = TextStyle(

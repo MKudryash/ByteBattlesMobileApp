@@ -81,14 +81,14 @@ data class UserProfileDto(
 @Serializable
 data class UserLeaderDto(
     val userId: String,
-    val username: String,
-    val avatarUrl: String,
-    val country: String,
-    val position: Int,
-    val totalExperience: Int,
-    val battlesWon: Int,
-    val problemsSolved: Int,
-    val level: String
+    val userName: String,
+    val avatarUrl: String?,
+    val country: String?,
+    val position: Int?,
+    val totalExperience: Int?,
+    val battlesWon: Int?,
+    val problemsSolved: Int?,
+    val level: String?
 )
 
 @Serializable

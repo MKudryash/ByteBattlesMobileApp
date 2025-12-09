@@ -41,7 +41,7 @@ class UserRepositoryImpl(
     private fun UserLeaderDto.toDomain(): UserLeader {
         return UserLeader(
             userId,
-            username,
+            userName,
             avatarUrl,
             country,
             position,

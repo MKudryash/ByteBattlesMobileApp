@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,15 +49,19 @@ fun CardNewsOrTask(
                 verticalAlignment = Alignment.Companion.CenterVertically
             ) {
                 Text(
-                    nameOfNews,
+                    modifier = Modifier.weight(0.6f),
+                    text =nameOfNews,
                     color = Color.Companion.Black,
                     fontWeight = FontWeight.Companion.Normal,
                     fontSize = 18.sp,
+                    lineHeight = 18.sp,
                     fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
                 )
                 Spacer(modifier = Modifier.Companion.width(10.dp))
                 Text(
-                    date,
+                    modifier = Modifier.weight(0.4f),
+                    text = date,
+                    textAlign = TextAlign.End,
                     color = Color.Companion.LightGray,
                     fontWeight = FontWeight.Companion.Thin,
                     fontSize = 14.sp,
