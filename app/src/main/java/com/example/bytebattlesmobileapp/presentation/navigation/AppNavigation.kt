@@ -100,10 +100,6 @@ fun AppNavigation(navController: NavHostController) {
                 onNavigateToGame = { taskId ->
                     // Переходим на экран TrainBattle с taskId
                     navController.navigate(Screen.TrainBattle.createRoute(taskId)) {
-                        // Закрываем весь стек битвы
-                        popUpTo(Screen.Battle.route) {
-                            inclusive = true
-                        }
                     }
                 }
             )
@@ -115,9 +111,8 @@ fun AppNavigation(navController: NavHostController) {
             val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
             TrainBattleScreen(
                 onNavigateBack = {
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(0)
-                    }
+                    // Возвращаемся к BattleContainerScreen (он все еще в стеке)
+                    navController.popBackStack()
                 },
                 taskId = taskId
             )

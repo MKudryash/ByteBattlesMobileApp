@@ -23,12 +23,15 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bytebattlesmobileapp.R
+import com.example.bytebattlesmobileapp.domain.model.BattleParticipant
 import com.example.bytebattlesmobileapp.domain.model.TestCase
 import com.example.bytebattlesmobileapp.domain.model.TestResult
+import com.example.bytebattlesmobileapp.presentation.components.ActionButton
 import com.example.bytebattlesmobileapp.presentation.components.CardTest
 import com.example.bytebattlesmobileapp.presentation.components.CircleButton
 import com.example.bytebattlesmobileapp.presentation.components.CustomInfoDialog
 import com.example.bytebattlesmobileapp.presentation.components.Header
+import com.example.bytebattlesmobileapp.presentation.viewmodel.BattleLobbyViewModel
 import com.example.bytebattlesmobileapp.presentation.viewmodel.TaskViewModel
 import com.wakaztahir.codeeditor.highlight.model.CodeLang
 import kotlinx.coroutines.CoroutineScope
@@ -43,22 +46,19 @@ import kotlin.collections.emptyList
 fun TrainBattleScreen(
     onNavigateBack: () -> Unit,
     taskId: String,
-    viewModel: TaskViewModel = hiltViewModel()
+    viewModel: TaskViewModel = hiltViewModel(),
+    battleLobbyViewModel: BattleLobbyViewModel = hiltViewModel(),
+    battleTaskViewModel: TaskViewModel = hiltViewModel()
 ) {
     Log.d("Train", "TaskId: $taskId")
 
-
     var nameTask by remember { mutableStateOf("Name of Task") }
     var initialCode by remember { mutableStateOf("// Write your code here") }
-// Используем nullable и инициализируем только один раз
     var currentCode by remember { mutableStateOf<String?>(null) }
     var languageId by remember { mutableStateOf("") }
     var isCodeInitialized by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
-    var testCases:List<TestCase> by remember { mutableStateOf(emptyList()) }
-
-
-
+    var testCases: List<TestCase> by remember { mutableStateOf(emptyList()) }
 
     var modalState by remember { mutableStateOf(ModalState.NONE) }
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -70,7 +70,12 @@ fun TrainBattleScreen(
     }
     val taskState by viewModel.taskState.collectAsStateWithLifecycle()
 
-    // Загружаем задачу при получении taskId
+    // Получаем состояние битвы
+    val battleUiState by battleLobbyViewModel.uiState.collectAsStateWithLifecycle()
+/*    val battleMessages by battleTaskViewModel.battleMessages.collectAsStateWithLifecycle()
+    val solutionResult by battleTaskViewModel.solutionResult.collectAsStateWithLifecycle()*/
+
+    // Загружаем задачу
     LaunchedEffect(taskId) {
         if (taskId.isNotEmpty()) {
             println("TrainBattleScreen: Loading task with id: $taskId")
@@ -84,23 +89,53 @@ fun TrainBattleScreen(
             is TaskViewModel.TaskDetailState.Success -> {
                 val task = (taskState as TaskViewModel.TaskDetailState.Success).task
                 println("TrainBattleScreen: Task loaded: ${task.title}")
-                // Здесь можно обновить UI с данными задачи
-            }
-            is TaskViewModel.TaskDetailState.Loading -> {
-                println("TrainBattleScreen: Loading task...")
-            }
-            is TaskViewModel.TaskDetailState.Error -> {
-                val error = (taskState as TaskViewModel.TaskState.Error).message
-                println("TrainBattleScreen: Error loading task: $error")
+                // Обновляем UI
+                nameTask = task.title
+                description = task.description
+                if (!isCodeInitialized && currentCode == null) {
+                    currentCode = task.patternFunction
+                    isCodeInitialized = true
+                    Log.d("TRAIN", "Initialized code: ${task.patternFunction}")
+                }
+                Log.d("TRAIN", "Task loaded: ${task.title}")
+                languageId = task.language!!.title
+                testCases = task.testCases
             }
             else -> {}
         }
     }
-    // Функция для отправки решения
-    val onSubmitSolution = {
 
+    // Отслеживаем сообщения битвы
+   /* LaunchedEffect(battleMessages) {
+        battleMessages.lastOrNull()?.let { message ->
+            println("TrainBattleScreen: Received battle message: $message")
+            // Здесь можно обновить UI на основе сообщений от сервера
+        }
     }
 
+    // Отслеживаем результат решения
+    LaunchedEffect(solutionResult) {
+        solutionResult?.let { result ->
+            println("TrainBattleScreen: Solution result: ${result.success}, ${result.message}")
+            // Показать результат пользователю
+        }
+    }*/
+
+    // Функция для отправки решения через WebSocket
+    val onSubmitSolution = {
+        /*currentCode?.let { code ->
+            if (battleUiState.roomId.isNotEmpty()) {
+                battleTaskViewModel.submitSolution(
+                    roomId = battleUiState.roomId,
+                    taskId = taskId,
+                    code = code,
+                    language = languageId
+                )
+            } else {
+                println("TrainBattleScreen: No room ID available for solution submission")
+            }
+        }*/
+    }
 
     Box(
         modifier = Modifier
@@ -110,67 +145,82 @@ fun TrainBattleScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-
             Header(
-                onNavigateBack = { onNavigateBack() },
-                textHeader = when (taskState) {
-                    is TaskViewModel.TaskDetailState.Success ->
-                        (taskState as TaskViewModel.TaskDetailState.Success).task.title
-                    else -> "Битва"
-                }
+                onNavigateBack = {
+                    // Обработка возврата
+                    battleLobbyViewModel.leaveRoom()
+                    battleLobbyViewModel.disconnect()
+                    onNavigateBack()
+                },
+                textHeader = nameTask
             )
 
+            // Добавляем статус битвы
+           /* BattleStatusBar(
+                roomId = battleUiState.roomId,
+                timeRemaining = battleUiState.gameDuration,
+                participants = battleUiState.participants
+            )*/
 
-
-
-
-                    Column(
-                        modifier = Modifier
-                            .padding(vertical = 10.dp)
-                            .weight(1f)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(horizontal = 10.dp)
-                                .padding(bottom = 10.dp)
-                        ) {
-                            Text(
-                                text = "Решение",
-                                color = Color.White,
-                                fontWeight = FontWeight.Normal,
-                                fontSize = 24.sp,
-                                fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold))
-                            )
-                        }
-
-
-                        // Проверяем, что currentCode не null
-                        currentCode?.let { code ->
-                            CodeEditor(
-                                language = getCodeLang("Charp"),
-                                initialCode = code,
-                                onCodeChange = { newCode ->
-                                    currentCode = newCode
-                                    Log.d("TrainScreen", "Code updated: ${newCode.length} chars")
-                                }
-                            )
-                        } ?: run {
-                            // Показываем индикатор загрузки, пока код не загружен
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = 0.7f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(color = Color.White)
-                            }
-                        }
-                    }
+            Column(
+                modifier = Modifier
+                    .padding(vertical = 10.dp)
+                    .weight(1f)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 10.dp)
+                        .padding(bottom = 10.dp)
+                ) {
+                    Text(
+                        text = "Решение",
+                        color = Color.White,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 24.sp,
+                        fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold))
+                    )
                 }
 
+                currentCode?.let { code ->
+                    CodeEditor(
+                        language = getCodeLang(languageId),
+                        initialCode = code,
+                        onCodeChange = { newCode ->
+                            currentCode = newCode
+                        }
+                    )
+                } ?: run {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.7f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color.White)
+                    }
+                }
+            }
 
+            // Кнопка отправки решения
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                ActionButton(
+                    text = "ОТПРАВИТЬ РЕШЕНИЕ",
+                    onClick = {
+                        modalState = ModalState.SUBMIT_CODE
+                    },
+                    color = Color(0xFF4CAF50),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                )
+            }
+        }
 
-        // Управление всеми модальными окнами
+        // Модальные окна
         ModalWindowsManager(
             modalState = modalState,
             onDismiss = { modalState = ModalState.NONE },
@@ -178,10 +228,54 @@ fun TrainBattleScreen(
             bottomSheetState = bottomSheetState,
             scope = scope,
             onBottomSheetDismiss = { showBottomSheet = false },
-            onSubmitSolution = { onSubmitSolution },
-            testCases,
-            description
+            onSubmitSolution = onSubmitSolution,
+            testCases = testCases,
+            description = description
         )
+    }
+}
+
+@Composable
+fun BattleStatusBar(
+    roomId: String,
+    timeRemaining: Int,
+    participants: List<BattleParticipant>
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF3A4659)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Битва продолжается",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = "Осталось времени: ${timeRemaining} сек",
+                    color = Color(0xFFFF9800),
+                    fontSize = 14.sp
+                )
+            }
+
+            Text(
+                text = "Игроков: ${participants.size}",
+                color = Color.White,
+                fontSize = 14.sp
+            )
+        }
     }
 }
 

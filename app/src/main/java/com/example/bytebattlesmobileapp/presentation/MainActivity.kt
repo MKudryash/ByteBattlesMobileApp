@@ -6,23 +6,38 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
+import com.example.bytebattlesmobileapp.domain.BattleConnectionManager
 import com.example.bytebattlesmobileapp.presentation.components.MainAppScaffold
 import com.example.bytebattlesmobileapp.presentation.navigation.AppNavigation
 import com.example.bytebattlesmobileapp.presentation.ui.theme.ByteBattlesMobileAppTheme
 import dagger.hilt.EntryPoint
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var battleConnectionManager: BattleConnectionManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             ByteBattlesMobileAppTheme {
                 val navController = rememberNavController()
+                DisposableEffect(Unit) {
+                    onDispose {
+                        // Отключаем WebSocket при закрытии приложения
+                        lifecycleScope.launch {
+                            battleConnectionManager.disconnect()
+                        }
+                    }
+                }
                 MainAppScaffold(navController = navController)
             }
         }

@@ -26,6 +26,11 @@ class BattleLobbyViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(BattleLobbyUiState())
     val uiState: StateFlow<BattleLobbyUiState> = _uiState.asStateFlow()
 
+
+    private val _gameStarted = MutableStateFlow(false)
+    val gameStarted: StateFlow<Boolean> = _gameStarted.asStateFlow()
+
+
     private val _messages = MutableStateFlow<List<IncomingBattleMessage>>(emptyList())
     val messages: StateFlow<List<IncomingBattleMessage>> = _messages.asStateFlow()
 
@@ -218,6 +223,7 @@ class BattleLobbyViewModel @Inject constructor(
                         countdown = message.countdown
                     )
                 }
+
                 // Начинаем обратный отсчет
                 startCountdown(message.countdown)
             }
@@ -253,6 +259,10 @@ class BattleLobbyViewModel @Inject constructor(
 
                 // ВАЖНО: Обновляем taskId
                 _taskId.value = message.taskId
+
+                // Устанавливаем флаг начала игры
+                _gameStarted.value = true
+
 
                 println("BattleLobbyViewModel: taskId updated to: ${_taskId.value}")
             }
