@@ -2,6 +2,8 @@ package com.example.bytebattlesmobileapp.domain.model
 
 import kotlinx.serialization.Serializable
 
+
+
 data class Solution(
     val id: String,
     val taskId: String,

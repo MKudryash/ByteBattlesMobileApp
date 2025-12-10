@@ -106,6 +106,13 @@ sealed class IncomingBattleMessage {
         val timestamp: String
     ) : IncomingBattleMessage()
 
+    data class BattleLost(
+        val winnerId: String,
+        val taskTitle: String,
+        val message: String,
+        val timestamp: String
+    ) : IncomingBattleMessage()
+
     data class BattleFinished(
         val winnerId: String,
         val taskTitle: String,

@@ -1,6 +1,7 @@
 package com.example.bytebattlesmobileapp.di
 
 import android.content.Context
+import com.example.bytebattlesmobileapp.data.datasource.local.PlayerIdManager
 import com.example.bytebattlesmobileapp.data.datasource.remote.TokenManager
 import com.example.bytebattlesmobileapp.data.interceptors.AuthInterceptor
 import com.example.bytebattlesmobileapp.data.network.*
@@ -200,6 +201,12 @@ object AppModule {
             }
         }
     }
+    @Provides
+    @Singleton
+    fun providePlayerIdManager(@ApplicationContext context: Context): PlayerIdManager {
+        return PlayerIdManager(context)
+    }
+
     // API сервисы - ВАЖНО: исправьте эти методы
     @Provides
     @Singleton

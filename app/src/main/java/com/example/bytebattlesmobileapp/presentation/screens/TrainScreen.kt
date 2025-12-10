@@ -405,7 +405,7 @@ private fun ModalWindowsManager(
 // Вынесенные компоненты для лучшей читаемости
 
 @Composable
-private fun BottomActionButtons(
+ fun BottomActionButtons(
     onFinishClick: () -> Unit,
     onInfoClick: () -> Unit,
     onSubmitClick: () -> Unit

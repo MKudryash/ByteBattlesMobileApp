@@ -97,24 +97,56 @@ fun AppNavigation(navController: NavHostController) {
                 navController = navController,
                 initialRoomId = roomId,
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateToGame = { taskId ->
+                onNavigateToGame = { taskId,roomId ->
                     // Переходим на экран TrainBattle с taskId
-                    navController.navigate(Screen.TrainBattle.createRoute(taskId)) {
+                    navController.navigate(Screen.TrainBattle.createRoute(taskId,roomId)) {
                     }
                 }
             )
         }
         composable(
             Screen.TrainBattle.route,
-            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("taskId") { type = NavType.StringType },
+                navArgument("roomId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
         ) { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
+            val roomId = backStackEntry.arguments?.getString("roomId")
+
             TrainBattleScreen(
                 onNavigateBack = {
-                    // Возвращаемся к BattleContainerScreen (он все еще в стеке)
-                    navController.popBackStack()
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(0)
+                    }
                 },
-                taskId = taskId
+                taskId = taskId,
+                roomId = roomId // Передаем roomId
+            )
+        }
+
+        composable(
+            route = Screen.TrainBattle.route + "/{taskId}",
+            arguments = listOf(
+                navArgument("taskId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
+            // Получаем roomId из query параметров
+            val roomId = backStackEntry.arguments?.getString("roomId") ?: ""
+
+            TrainBattleScreen(
+                onNavigateBack = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(0)
+                    }
+                },
+                taskId = taskId,
+                roomId = roomId
             )
         }
 

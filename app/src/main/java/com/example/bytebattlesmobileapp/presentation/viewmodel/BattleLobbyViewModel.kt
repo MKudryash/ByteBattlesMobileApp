@@ -3,6 +3,7 @@ package com.example.bytebattlesmobileapp.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.bytebattlesmobileapp.data.datasource.local.PlayerIdManager
 import com.example.bytebattlesmobileapp.data.network.IncomingBattleMessage
 import com.example.bytebattlesmobileapp.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,8 +20,10 @@ class BattleLobbyViewModel @Inject constructor(
     private val joinRoomUseCase: JoinRoomUseCase,
     private val toggleReadyUseCase: ToggleReadyUseCase,
     private val leaveRoomUseCase: LeaveRoomUseCase,
+    private val submitCodeUseCase:SubmitCodeUseCase,
     private val getBattleMessagesUseCase: GetBattleMessagesUseCase,
-    private val getBattleConnectionStateUseCase: GetBattleConnectionStateUseCase
+    private val getBattleConnectionStateUseCase: GetBattleConnectionStateUseCase,
+    private val playerIdManager: PlayerIdManager // Добавляем зависимость
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BattleLobbyUiState())
@@ -30,6 +33,9 @@ class BattleLobbyViewModel @Inject constructor(
     private val _gameStarted = MutableStateFlow(false)
     val gameStarted: StateFlow<Boolean> = _gameStarted.asStateFlow()
 
+    private val _submitState =
+        MutableStateFlow<SubmitSolutionStateBattle>(SubmitSolutionStateBattle.Idle)
+    val submitState: StateFlow<SubmitSolutionStateBattle> = _submitState.asStateFlow()
 
     private val _messages = MutableStateFlow<List<IncomingBattleMessage>>(emptyList())
     val messages: StateFlow<List<IncomingBattleMessage>> = _messages.asStateFlow()
@@ -40,6 +46,7 @@ class BattleLobbyViewModel @Inject constructor(
     var roomParams: BattleRoomParams? = null
 
     init {
+        restorePlayerId()
         observeMessages()
         observeConnectionState()
     }
@@ -87,6 +94,9 @@ class BattleLobbyViewModel @Inject constructor(
                     )
                 }
                 println("BattleLobbyViewModel: Player ID set to: ${message.playerId}")
+                println("BattleLobbyViewModel: Player ID set to: ${message.playerId}")
+                // Сохраняем в SharedPreferences для дальнейшего использования
+                savePlayerId(message.playerId)
             }
 
             is IncomingBattleMessage.RoomCreated -> {
@@ -141,7 +151,8 @@ class BattleLobbyViewModel @Inject constructor(
                 )
 
                 _uiState.update { currentState ->
-                    val participantExists = currentState.participants.any { it.id == message.playerId }
+                    val participantExists =
+                        currentState.participants.any { it.id == message.playerId }
                     if (!participantExists) {
                         currentState.copy(
                             participants = currentState.participants + newParticipant,
@@ -164,7 +175,45 @@ class BattleLobbyViewModel @Inject constructor(
                     )
                 }
             }
+            is IncomingBattleMessage.CodeSubmitted -> {
+                println("BattleLobbyViewModel: Code submitted - task: ${message.taskTitle}")
+                // Можно обновить UI, показать что решение принято
+            }
 
+            is IncomingBattleMessage.CodeSubmittedByPlayer -> {
+                println("BattleLobbyViewModel: Player ${message.playerId} submitted code")
+                // Оповещение о том, что другой игрок отправил решение
+            }
+
+            is IncomingBattleMessage.CodeResult -> {
+                println("BattleLobbyViewModel: Code result received - status=${message.result.status}")
+
+                val resultMessage = when (message.result.status) {
+                    "success" -> "Решение принято! Пройдено тестов: ${message.result.passedTests}/${message.result.totalTests}"
+                    "wrong_answer" -> "Неправильный ответ. Пройдено тестов: ${message.result.passedTests}/${message.result.totalTests}"
+                    "compile_error" -> "Ошибка компиляции"
+                    "runtime_error" -> "Ошибка времени выполнения"
+                    "time_limit_exceeded" -> "Превышено время выполнения"
+                    else -> "Результат: ${message.result.status}"
+                }
+
+                // Показываем детали тестов если есть
+                message.testResults?.let { testResults ->
+                    println("Test results details:")
+                    testResults.forEachIndexed { index, test ->
+                        println("Test $index: ${test.status}, input=${test.input}, expected=${test.expectedOutput}, actual=${test.actualOutput}")
+                    }
+                }
+
+                // Обновляем состояние
+                _submitState.value = SubmitSolutionStateBattle.Success(resultMessage)
+
+                // Автоматически сбрасываем через 5 секунд
+                viewModelScope.launch {
+                    delay(5000)
+                    _submitState.value = SubmitSolutionStateBattle.Idle
+                }
+            }
             is IncomingBattleMessage.PlayerReadySet -> {
                 _uiState.update { currentState ->
                     currentState.copy(isCurrentPlayerReady = message.isReady)
@@ -227,7 +276,32 @@ class BattleLobbyViewModel @Inject constructor(
                 // Начинаем обратный отсчет
                 startCountdown(message.countdown)
             }
+            is IncomingBattleMessage.BattleWon -> {
+                println("BattleLobbyViewModel: Battle won by ${message.winnerId}")
+                // Устанавливаем флаг завершения битвы
+                _uiState.update {
+                    it.copy(
+                        battleState = BattleRoomState.Finished // Добавьте это состояние
+                    )
+                }
+            }
 
+            is IncomingBattleMessage.BattleFinished -> {
+                println("BattleLobbyViewModel: Battle finished")
+                _uiState.update {
+                    it.copy(
+                        battleState = BattleRoomState.Finished
+                    )
+                }
+            }
+            is IncomingBattleMessage.BattleLost -> {
+                println("BattleLobbyViewModel: Battle lost. Winner: ${message.winnerId}")
+                _uiState.update {
+                    it.copy(
+                        battleState = BattleRoomState.Finished
+                    )
+                }
+            }
             // ВАЖНО: Добавляем обработку ReadinessTimeout
             is IncomingBattleMessage.ReadinessTimeout -> {
                 println("BattleLobbyViewModel: ReadinessTimeout received - message=${message.message}, readyCount=${message.readyCount}")
@@ -293,7 +367,8 @@ class BattleLobbyViewModel @Inject constructor(
         viewModelScope.launch {
             var currentCountdown = initialCountdown
             while (currentCountdown > 0 &&
-                _uiState.value.battleState is BattleRoomState.ReadyCheck) {
+                _uiState.value.battleState is BattleRoomState.ReadyCheck
+            ) {
                 delay(1000)
                 currentCountdown--
                 _uiState.update { it.copy(countdown = currentCountdown) }
@@ -311,7 +386,22 @@ class BattleLobbyViewModel @Inject constructor(
             }
         }
     }
+    private fun restorePlayerId() {
+        val savedPlayerId = playerIdManager.getPlayerId()
+        if (!savedPlayerId.isNullOrEmpty()) {
+            _uiState.update { it.copy(playerId = savedPlayerId) }
+            println("BattleLobbyViewModel: Restored playerId from storage: $savedPlayerId")
+        } else {
+            println("BattleLobbyViewModel: No saved playerId found")
+        }
+    }
 
+    private fun savePlayerId(playerId: String) {
+        // Сохраняем playerId в SharedPreferences
+        playerIdManager.savePlayerId(playerId)
+        println("BattleLobbyViewModel: Saved playerId to storage: $playerId")
+    }
+    fun  getPlayerId(): String = _uiState.value.playerId
     fun connect(token: String? = null) {
         viewModelScope.launch {
             println("BattleLobbyViewModel: Starting connection...")
@@ -325,7 +415,8 @@ class BattleLobbyViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             battleState = BattleRoomState.Error("Ошибка подключения"),
-                            connectionError = result.exceptionOrNull()?.message ?: "Неизвестная ошибка",
+                            connectionError = result.exceptionOrNull()?.message
+                                ?: "Неизвестная ошибка",
                             isLoading = false
                         )
                     }
@@ -376,11 +467,11 @@ class BattleLobbyViewModel @Inject constructor(
 
                     println("BattleLobbyViewModel: Create room result: $result")
 
-                    if (result==null) {
+                    if (result == null) {
                         _uiState.update {
                             it.copy(
                                 battleState = BattleRoomState.Error("Ошибка создания комнаты"),
-                                connectionError =  "Неизвестная ошибка",
+                                connectionError = "Неизвестная ошибка",
                                 isLoading = false
                             )
                         }
@@ -425,81 +516,134 @@ class BattleLobbyViewModel @Inject constructor(
         }
     }
 
-    fun toggleReady() {
-        val roomId = _uiState.value.roomId
-        val isReady = _uiState.value.isCurrentPlayerReady
 
-        if (roomId.isNotEmpty()) {
-            viewModelScope.launch {
-                toggleReadyUseCase(roomId, !isReady)
+    fun submitSolutionViaWebSocket(code: String, roomId: String?) {
+        viewModelScope.launch {
+            val roomId = roomId
+
+            if (roomId!!.isEmpty()) {
+                _submitState.value = SubmitSolutionStateBattle.Error("Нет активной комнаты")
+                return@launch
+            }
+
+            if (code.isBlank()) {
+                _submitState.value = SubmitSolutionStateBattle.Error("Код не может быть пустым")
+                return@launch
+            }
+
+            try {
+                _submitState.value = SubmitSolutionStateBattle.Loading
+
+                println("BattleLobbyViewModel: Submitting solution via WebSocket, roomId=$roomId, code length=${code.length}")
+
+                // Используем use case для отправки кода
+                submitCodeUseCase(
+                    roomId = roomId,
+                    code = code
+                )
+
+                // Если не было исключения, считаем успешным
+                _submitState.value = SubmitSolutionStateBattle.Success("Решение отправлено на проверку")
+                println("BattleLobbyViewModel: Solution submitted via WebSocket successfully")
+
+                // Автоматически сбрасываем состояние через 3 секунды
+                delay(3000)
+                _submitState.value = SubmitSolutionStateBattle.Idle
+
+            } catch (e: Exception) {
+                _submitState.value = SubmitSolutionStateBattle.Error("Ошибка: ${e.message ?: "Неизвестная ошибка"}")
+                println("BattleLobbyViewModel: Error submitting solution via WebSocket: ${e.message}")
+
+                // Также сбрасываем состояние через 5 секунды при ошибке
+                delay(5000)
+                _submitState.value = SubmitSolutionStateBattle.Idle
             }
         }
     }
 
-    fun leaveRoom() {
-        val roomId = _uiState.value.roomId
+        fun toggleReady() {
+            val roomId = _uiState.value.roomId
+            val isReady = _uiState.value.isCurrentPlayerReady
 
-        if (roomId.isNotEmpty()) {
-            viewModelScope.launch {
-                leaveRoomUseCase(roomId)
-                // Сбрасываем состояние после выхода
-                _uiState.update { BattleLobbyUiState() }
+            if (roomId.isNotEmpty()) {
+                viewModelScope.launch {
+                    toggleReadyUseCase(roomId, !isReady)
+                }
             }
         }
-    }
 
-    fun startReadyCheck() {
-        // В реальном приложении это будет сообщение на сервер
-        _uiState.update {
-            it.copy(battleState = BattleRoomState.ReadyCheck, countdown = 30)
+        fun leaveRoom() {
+            val roomId = _uiState.value.roomId
+
+            if (roomId.isNotEmpty()) {
+                viewModelScope.launch {
+                    leaveRoomUseCase(roomId)
+                    // Сбрасываем состояние после выхода
+                    _uiState.update { BattleLobbyUiState() }
+                }
+            }
         }
+
+        fun startReadyCheck() {
+            // В реальном приложении это будет сообщение на сервер
+            _uiState.update {
+                it.copy(battleState = BattleRoomState.ReadyCheck, countdown = 30)
+            }
+        }
+
+        fun clearError() {
+            _uiState.update { it.copy(connectionError = null) }
+        }
+
+        fun getCurrentTaskId(): String? = _taskId.value
     }
 
-    fun clearError() {
-        _uiState.update { it.copy(connectionError = null) }
+    data class BattleRoomParams(
+        val roomName: String,
+        val languageId: String,
+        val difficulty: String
+    )
+
+    // Обновленный BattleLobbyUiState с начальным состоянием
+    data class BattleLobbyUiState(
+        val isLoading: Boolean = false,
+        val isConnected: Boolean = false,
+        val connectionError: String? = null,
+        val playerId: String = "",
+        val roomId: String = "",
+        val roomName: String = "",
+        val participants: List<BattleParticipant> = emptyList(),
+        val participantsCount: Int = 0,
+        val readyCount: Int = 0,
+        val isCurrentPlayerReady: Boolean = false,
+        val battleState: BattleRoomState = BattleRoomState.NotConnected, // Изменили начальное состояние
+        val countdown: Int = 30,
+        val gameDuration: Int = 0,
+        val taskId: String? = null,
+    )
+
+    // Добавляем новое состояние для начального статуса
+    sealed class BattleRoomState {
+        object NotConnected : BattleRoomState() // Добавляем новое состояние
+        object WaitingForPlayers : BattleRoomState()
+        object ReadyCheck : BattleRoomState()
+        object StartingGame : BattleRoomState()
+        object GameStarted : BattleRoomState()
+        object Finished : BattleRoomState()
+        data class Error(val message: String) : BattleRoomState()
     }
 
-    fun getCurrentTaskId(): String? = _taskId.value
-}
-data class BattleRoomParams (
-    val roomName: String,
-    val languageId: String,
-    val difficulty: String
-)
+    sealed class SubmitSolutionStateBattle {
+        object Idle : SubmitSolutionStateBattle()
+        object Loading : SubmitSolutionStateBattle()
+        data class Success(val message: String) : SubmitSolutionStateBattle()
+        data class Error(val error: String) : SubmitSolutionStateBattle()
+    }
 
-// Обновленный BattleLobbyUiState с начальным состоянием
-data class BattleLobbyUiState(
-    val isLoading: Boolean = false,
-    val isConnected: Boolean = false,
-    val connectionError: String? = null,
-    val playerId: String = "",
-    val roomId: String = "",
-    val roomName: String = "",
-    val participants: List<BattleParticipant> = emptyList(),
-    val participantsCount: Int = 0,
-    val readyCount: Int = 0,
-    val isCurrentPlayerReady: Boolean = false,
-    val battleState: BattleRoomState = BattleRoomState.NotConnected, // Изменили начальное состояние
-    val countdown: Int = 30,
-    val gameDuration: Int = 0,
-    val taskId: String? = null,
-)
-
-// Добавляем новое состояние для начального статуса
-sealed class BattleRoomState {
-    object NotConnected : BattleRoomState() // Добавляем новое состояние
-    object WaitingForPlayers : BattleRoomState()
-    object ReadyCheck : BattleRoomState()
-    object StartingGame : BattleRoomState()
-    object GameStarted : BattleRoomState()
-    data class Error(val message: String) : BattleRoomState()
-}
-
-
-// Обновленная модель участника
-data class BattleParticipant(
-    val id: String,
-    val name: String,
-    val isReady: Boolean = false,
-    val isConnected: Boolean = true
-)
+    // Обновленная модель участника
+    data class BattleParticipant(
+        val id: String,
+        val name: String,
+        val isReady: Boolean = false,
+        val isConnected: Boolean = true
+    )

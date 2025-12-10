@@ -4,8 +4,6 @@ import CodeEditor
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,27 +11,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bytebattlesmobileapp.R
+import com.example.bytebattlesmobileapp.data.network.IncomingBattleMessage
 import com.example.bytebattlesmobileapp.domain.model.BattleParticipant
 import com.example.bytebattlesmobileapp.domain.model.TestCase
-import com.example.bytebattlesmobileapp.domain.model.TestResult
-import com.example.bytebattlesmobileapp.presentation.components.ActionButton
-import com.example.bytebattlesmobileapp.presentation.components.CardTest
-import com.example.bytebattlesmobileapp.presentation.components.CircleButton
 import com.example.bytebattlesmobileapp.presentation.components.CustomInfoDialog
 import com.example.bytebattlesmobileapp.presentation.components.Header
 import com.example.bytebattlesmobileapp.presentation.viewmodel.BattleLobbyViewModel
+import com.example.bytebattlesmobileapp.presentation.viewmodel.SubmitSolutionStateBattle
 import com.example.bytebattlesmobileapp.presentation.viewmodel.TaskViewModel
-import com.wakaztahir.codeeditor.highlight.model.CodeLang
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -48,7 +41,7 @@ fun TrainBattleScreen(
     taskId: String,
     viewModel: TaskViewModel = hiltViewModel(),
     battleLobbyViewModel: BattleLobbyViewModel = hiltViewModel(),
-    battleTaskViewModel: TaskViewModel = hiltViewModel()
+    roomId: String? = null,
 ) {
     Log.d("Train", "TaskId: $taskId")
 
@@ -65,6 +58,11 @@ fun TrainBattleScreen(
     val scope = rememberCoroutineScope()
     val bottomSheetState = rememberModalBottomSheetState()
 
+    val submitState by battleLobbyViewModel.submitState.collectAsStateWithLifecycle()
+
+    // Состояние для результата битвы
+    var battleResult by remember { mutableStateOf<BattleResult?>(null) }
+
     val onNavigate = { destination: String ->
         modalState = ModalState.NONE
     }
@@ -72,8 +70,7 @@ fun TrainBattleScreen(
 
     // Получаем состояние битвы
     val battleUiState by battleLobbyViewModel.uiState.collectAsStateWithLifecycle()
-/*    val battleMessages by battleTaskViewModel.battleMessages.collectAsStateWithLifecycle()
-    val solutionResult by battleTaskViewModel.solutionResult.collectAsStateWithLifecycle()*/
+    val messages by battleLobbyViewModel.messages.collectAsStateWithLifecycle()
 
     // Загружаем задачу
     LaunchedEffect(taskId) {
@@ -83,21 +80,62 @@ fun TrainBattleScreen(
         }
     }
 
+
+    LaunchedEffect(messages) {
+        messages.lastOrNull()?.let { message ->
+            println("TrainBattleScreen: Received battle message: $message")
+
+
+            when (message) {
+                is IncomingBattleMessage.BattleWon -> {
+                    println("Hto win" + battleUiState.playerId)
+                    val isCurrentPlayerWinner = message.winnerId == battleUiState.playerId
+                    battleResult = BattleResult(
+                        isWinner = isCurrentPlayerWinner,
+                        taskTitle = message.taskTitle,
+                        message = message.message
+                    )
+                    println("TrainBattleScreen: Battle result set - isWinner=$isCurrentPlayerWinner")
+                }
+                is IncomingBattleMessage.BattleLost -> {
+                    println("=== BATTLE LOST DEBUG ===")
+                    println("Winner ID from message: ${message.winnerId}")
+                    println("Player ID from UI state: ${battleUiState.playerId}")
+
+
+                    battleResult = BattleResult(
+                        isWinner = false,
+                        taskTitle = message.taskTitle,
+                        message = message.message
+                    )
+                    println("TrainBattleScreen: Battle lost - message=${message.message}")
+                    println("=== END DEBUG ===")
+                }
+                is IncomingBattleMessage.BattleFinished -> {
+
+                    battleResult = BattleResult(
+                        isWinner = false,
+                        taskTitle = nameTask,
+                        message = "Битва завершена"
+                    )
+                }
+                else -> {}
+            }
+        }
+    }
+
     // Отслеживаем состояние задачи
     LaunchedEffect(taskState) {
         when (taskState) {
             is TaskViewModel.TaskDetailState.Success -> {
                 val task = (taskState as TaskViewModel.TaskDetailState.Success).task
                 println("TrainBattleScreen: Task loaded: ${task.title}")
-                // Обновляем UI
                 nameTask = task.title
                 description = task.description
                 if (!isCodeInitialized && currentCode == null) {
                     currentCode = task.patternFunction
                     isCodeInitialized = true
-                    Log.d("TRAIN", "Initialized code: ${task.patternFunction}")
                 }
-                Log.d("TRAIN", "Task loaded: ${task.title}")
                 languageId = task.language!!.title
                 testCases = task.testCases
             }
@@ -105,36 +143,37 @@ fun TrainBattleScreen(
         }
     }
 
-    // Отслеживаем сообщения битвы
-   /* LaunchedEffect(battleMessages) {
-        battleMessages.lastOrNull()?.let { message ->
-            println("TrainBattleScreen: Received battle message: $message")
-            // Здесь можно обновить UI на основе сообщений от сервера
+    // Функция для отправки решения
+    val onSubmitSolution = {
+        currentCode?.let { code ->
+            battleLobbyViewModel.submitSolutionViaWebSocket(
+                code = code,
+                roomId = roomId
+            )
         }
     }
 
-    // Отслеживаем результат решения
-    LaunchedEffect(solutionResult) {
-        solutionResult?.let { result ->
-            println("TrainBattleScreen: Solution result: ${result.success}, ${result.message}")
-            // Показать результат пользователю
-        }
-    }*/
-
-    // Функция для отправки решения через WebSocket
-    val onSubmitSolution = {
-        /*currentCode?.let { code ->
-            if (battleUiState.roomId.isNotEmpty()) {
-                battleTaskViewModel.submitSolution(
-                    roomId = battleUiState.roomId,
-                    taskId = taskId,
-                    code = code,
-                    language = languageId
-                )
-            } else {
-                println("TrainBattleScreen: No room ID available for solution submission")
+    // Отслеживаем результат отправки
+    LaunchedEffect(submitState) {
+        when (submitState) {
+            is SubmitSolutionStateBattle.Success -> {
+                println("TrainBattleScreen: Solution submitted successfully")
             }
-        }*/
+            else -> {}
+        }
+    }
+
+    // Обработка закрытия результата битвы
+    LaunchedEffect(battleResult) {
+        battleResult?.let {
+
+            delay(10000)
+            battleResult = null
+            // Возвращаемся на главный экран
+            battleLobbyViewModel.leaveRoom()
+            battleLobbyViewModel.disconnect()
+            onNavigateBack()
+        }
     }
 
     Box(
@@ -147,20 +186,12 @@ fun TrainBattleScreen(
         ) {
             Header(
                 onNavigateBack = {
-                    // Обработка возврата
                     battleLobbyViewModel.leaveRoom()
                     battleLobbyViewModel.disconnect()
                     onNavigateBack()
                 },
                 textHeader = nameTask
             )
-
-            // Добавляем статус битвы
-           /* BattleStatusBar(
-                roomId = battleUiState.roomId,
-                timeRemaining = battleUiState.gameDuration,
-                participants = battleUiState.participants
-            )*/
 
             Column(
                 modifier = Modifier
@@ -200,23 +231,23 @@ fun TrainBattleScreen(
                     }
                 }
             }
+        }
 
-            // Кнопка отправки решения
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                ActionButton(
-                    text = "ОТПРАВИТЬ РЕШЕНИЕ",
-                    onClick = {
-                        modalState = ModalState.SUBMIT_CODE
-                    },
-                    color = Color(0xFF4CAF50),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                )
+        // Показываем кнопки действий только если нет результата битвы
+        if (battleResult == null) {
+            when (taskState) {
+                is TaskViewModel.TaskDetailState.Success -> {
+                    if (submitState !is TaskViewModel.SubmitSolutionState.Loading) {
+                        BottomActionButtons(
+                            onFinishClick = { modalState = ModalState.FINISH_TASK },
+                            onInfoClick = { modalState = ModalState.TESTS_BOTTOM_SHEET },
+                            onSubmitClick = {
+                                modalState = ModalState.SUBMIT_CODE
+                            }
+                        )
+                    }
+                }
+                else -> {}
             }
         }
 
@@ -228,13 +259,34 @@ fun TrainBattleScreen(
             bottomSheetState = bottomSheetState,
             scope = scope,
             onBottomSheetDismiss = { showBottomSheet = false },
-            onSubmitSolution = onSubmitSolution,
+            onSubmitSolution = { onSubmitSolution() },
             testCases = testCases,
             description = description
         )
+
+        // Показываем результат битвы
+        battleResult?.let { result ->
+            BattleResultScreen(
+                isWinner = result.isWinner,
+                taskTitle = result.taskTitle,
+                message = result.message,
+                onDismiss = {
+                    battleResult = null
+                    battleLobbyViewModel.leaveRoom()
+                    battleLobbyViewModel.disconnect()
+                    onNavigateBack()
+                }
+            )
+        }
     }
 }
 
+
+data class BattleResult(
+    val isWinner: Boolean,
+    val taskTitle: String,
+    val message: String
+)
 @Composable
 fun BattleStatusBar(
     roomId: String,
@@ -279,7 +331,6 @@ fun BattleStatusBar(
     }
 }
 
-// Обновите ModalWindowsManager, чтобы принимать onSubmitSolution
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ModalWindowsManager(

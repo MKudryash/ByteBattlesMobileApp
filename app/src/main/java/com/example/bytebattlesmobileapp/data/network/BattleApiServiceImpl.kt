@@ -417,6 +417,14 @@ class BattleApiServiceImpl @Inject constructor(
                         timestamp = jsonElement.jsonObject["timestamp"]?.jsonPrimitive?.content ?: ""
                     )
                 }
+                "battle_lost" -> {
+                    IncomingBattleMessage.BattleLost(
+                        winnerId = jsonElement.jsonObject["winnerId"]?.jsonPrimitive?.content ?: "",
+                        taskTitle = jsonElement.jsonObject["taskTitle"]?.jsonPrimitive?.content ?: "",
+                        message = jsonElement.jsonObject["message"]?.jsonPrimitive?.content ?: "",
+                        timestamp = jsonElement.jsonObject["timestamp"]?.jsonPrimitive?.content ?: ""
+                    )
+                }
                 "battle_finished" -> {
                     IncomingBattleMessage.BattleFinished(
                         winnerId = jsonElement.jsonObject["winnerId"]?.jsonPrimitive?.content ?: "",

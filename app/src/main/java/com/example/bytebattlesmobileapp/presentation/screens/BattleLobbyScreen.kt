@@ -42,7 +42,7 @@ import android.widget.Toast
 @Composable
 fun BattleLobbyScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToGame: (String) -> Unit,
+    onNavigateToGame: (String,String) -> Unit,
     viewModel: BattleLobbyViewModel = hiltViewModel()
 ) {
     val taskId by viewModel.taskId.collectAsStateWithLifecycle()
@@ -124,7 +124,7 @@ fun BattleLobbyScreen(
     LaunchedEffect(uiState.battleState) {
         if (uiState.battleState is BattleRoomState.GameStarted && taskId != null) {
             delay(2000)
-            onNavigateToGame(taskId!!)
+            onNavigateToGame(taskId!!,uiState.roomId)
         }
     }
 
@@ -239,7 +239,7 @@ fun BattleLobbyScreen(
                 is BattleRoomState.GameStarted -> {
                     GameStartedView(
                         taskId = taskId,
-                        onNavigateToGame = { taskId?.let { onNavigateToGame(it) } },
+                        onNavigateToGame = { taskId?.let { onNavigateToGame(it,uiState.roomId) } },
                         onNavigateBack = onNavigateBack
                     )
                 }
@@ -260,6 +260,11 @@ fun BattleLobbyScreen(
                         }
                     )
                 }
+
+                BattleRoomState.Finished -> {
+
+                }
+
             }
         }
 
@@ -456,6 +461,9 @@ fun RoomStatusSection(
                 is BattleRoomState.StartingGame -> Color(0x1A2196F3)
                 is BattleRoomState.GameStarted -> Color(0x1A9C27B0)
                 is BattleRoomState.Error -> Color(0x1AF44336)
+                BattleRoomState.Finished -> {
+                    Color(0x1AF44336)
+                }
             }
         ),
         shape = RoundedCornerShape(12.dp)
@@ -469,14 +477,16 @@ fun RoomStatusSection(
         ) {
             Column {
                 Text(
-                    text = when (battleState) {
+                    text =
+                        when (battleState) {
                         is BattleRoomState.NotConnected -> "Подключение..."
                         is BattleRoomState.WaitingForPlayers -> "Ожидание игроков"
                         is BattleRoomState.ReadyCheck -> "Подтверждение готовности"
                         is BattleRoomState.StartingGame -> "Начинаем битву!"
                         is BattleRoomState.GameStarted -> "Битва началась!"
                         is BattleRoomState.Error -> "Ошибка"
-                    },
+                            BattleRoomState.Finished -> "Завершение"
+                        },
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
@@ -490,6 +500,7 @@ fun RoomStatusSection(
                         is BattleRoomState.StartingGame -> "Подготовка к задаче..."
                         is BattleRoomState.GameStarted -> "Пишите код!"
                         is BattleRoomState.Error -> (battleState as BattleRoomState.Error).message
+                        BattleRoomState.Finished -> "Завершение"
                     },
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 14.sp
@@ -504,6 +515,7 @@ fun RoomStatusSection(
                 is BattleRoomState.StartingGame -> painterResource(R.drawable.hourglass) to Color(0xFF2196F3)
                 is BattleRoomState.GameStarted -> painterResource(R.drawable.hourglass) to Color(0xFF9C27B0)
                 is BattleRoomState.Error -> painterResource(R.drawable.error) to Color(0xFFF44336)
+                BattleRoomState.Finished -> painterResource(R.drawable.check) to Color(0xFF4CAF50)
             }
 
             Icon(
@@ -693,9 +705,6 @@ fun GameStartedView(
                 text = "ПЕРЕЙТИ К РЕШЕНИЮ",
                 onClick = onNavigateToGame,
                 color = Color(0xFF4CAF50),
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(48.dp)
             )
         }
 
@@ -705,9 +714,6 @@ fun GameStartedView(
             text = "ВЫЙТИ".uppercase(),
             onClick = onNavigateBack,
             color = Color(0xFFF44336),
-            modifier = Modifier
-                .fillMaxWidth(0.7f)
-                .height(48.dp)
         )
     }
 }
