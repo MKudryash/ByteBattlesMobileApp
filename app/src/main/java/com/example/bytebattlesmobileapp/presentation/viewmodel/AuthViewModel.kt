@@ -4,10 +4,15 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bytebattlesmobileapp.domain.model.User
+import com.example.bytebattlesmobileapp.domain.model.UserProfile
+import com.example.bytebattlesmobileapp.domain.model.UserSettings
+import com.example.bytebattlesmobileapp.domain.model.UserStats
 import com.example.bytebattlesmobileapp.domain.usecase.LoginUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.RegisterUseCase
 import com.example.bytebattlesmobileapp.domain.repository.AuthRepository
 import com.example.bytebattlesmobileapp.domain.usecase.GetUserActivitiesUseCase
+import com.example.bytebattlesmobileapp.domain.usecase.GetUserProfileUseCase
+import com.example.bytebattlesmobileapp.domain.usecase.RefreshTokenUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -33,7 +38,7 @@ sealed interface AuthEvent {
 data class AuthUIState(
     val authState: AuthState = AuthState.Idle,
     val isLoggedIn: Boolean = false,
-    val currentUser: User? = null,
+    val currentUser: String? = null,
     val isLoading: Boolean = false,
     val isCheckingAuth: Boolean = true,
     val errorMessage: String? = null
@@ -44,6 +49,8 @@ class AuthViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
     private val registerUseCase: RegisterUseCase,
     private val authRepository: AuthRepository,
+    private val getUserProfile: GetUserProfileUseCase,
+    private val refreshTokenUseCase: RefreshTokenUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUIState())
@@ -72,21 +79,55 @@ class AuthViewModel @Inject constructor(
         _uiState.update { it.copy(authState = AuthState.CheckingAuth, isCheckingAuth = true) }
 
         try {
-            // Проверяем, есть ли сохраненный токен
+            // ПРОВЕРЯЕМ НЕ ТОЛЬКО НАЛИЧИЕ, НО И ВАЛИДНОСТЬ ТОКЕНА
             val hasToken = authRepository.isLoggedIn()
 
             if (hasToken) {
-                Log.d("AuthViewModel", "Token found, navigating to main")
-                _uiState.update {
-                    it.copy(
-                        authState = AuthState.Idle,
-                        isLoggedIn = true,
-                        isCheckingAuth = false
-                    )
+                // Попробуем получить профиль пользователя, чтобы проверить валидность токена
+                try {
+                    // Если токен валидный, этот запрос пройдет успешно
+                    val userProfile = getUserProfile()
+
+                    Log.d("AuthViewModel", "Token is valid, navigating to main. User: ${userProfile.userName}")
+                    _uiState.update {
+                        it.copy(
+                            authState = AuthState.Idle,
+                            isLoggedIn = true,
+                            isCheckingAuth = false,
+                            currentUser =  userProfile.userName
+                        )
+                    }
+                    _navigateToMain.value = true
+                } catch (e: Exception) {
+                    // Если не удалось получить профиль, значит токен невалидный
+                    Log.e("AuthViewModel", "Token is invalid: ${e.message}")
+                    val refresh = refreshTokenUseCase()
+                    try {
+                        val userProfile = getUserProfile()
+
+                        Log.d("AuthViewModel", "Token is valid, navigating to main. User: ${userProfile.userName}")
+                        _uiState.update {
+                            it.copy(
+                                authState = AuthState.Idle,
+                                isLoggedIn = true,
+                                isCheckingAuth = false,
+                                currentUser =  userProfile.userName
+                            )
+                        }
+                        _navigateToMain.value = true
+                    }
+                    catch (e: Exception){
+                        authRepository.logout()
+                        _uiState.update {
+                            it.copy(
+                                authState = AuthState.Idle,
+                                isLoggedIn = false,
+                                isCheckingAuth = false,
+                                currentUser = null
+                            )
+                        }
+                    }
                 }
-                // Небольшая задержка для показа splash/start экрана
-                delay(1000)
-                _navigateToMain.value = true
             } else {
                 Log.d("AuthViewModel", "No token found, staying on start screen")
                 _uiState.update {
@@ -96,16 +137,15 @@ class AuthViewModel @Inject constructor(
                         isCheckingAuth = false
                     )
                 }
-                // Остаемся на стартовом экране (StartScreen)
-                // Пользователь сам выберет ВОЙТИ или СОЗДАТЬ АККАУНТ
             }
         } catch (e: Exception) {
             Log.e("AuthViewModel", "Error checking auth status: ${e.message}")
             _uiState.update {
                 it.copy(
-                    authState = AuthState.Idle,
+                    authState = AuthState.Error("Authentication check failed"),
                     isLoggedIn = false,
-                    isCheckingAuth = false
+                    isCheckingAuth = false,
+                    errorMessage = "Authentication check failed: ${e.message}"
                 )
             }
             // В случае ошибки остаемся на стартовом экране
@@ -123,7 +163,7 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         authState = AuthState.Success(user),
                         isLoggedIn = true,
-                        currentUser = user,
+                        currentUser = user.username,
                         isLoading = false,
                         errorMessage = null
                     )
@@ -153,7 +193,7 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         authState = AuthState.Success(user),
                         isLoggedIn = true,
-                        currentUser = user,
+                        currentUser = user.username,
                         isLoading = false,
                         errorMessage = null
                     )

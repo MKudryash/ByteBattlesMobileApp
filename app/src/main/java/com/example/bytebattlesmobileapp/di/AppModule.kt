@@ -5,6 +5,7 @@ import com.example.bytebattlesmobileapp.data.datasource.local.PlayerIdManager
 import com.example.bytebattlesmobileapp.data.datasource.remote.TokenManager
 import com.example.bytebattlesmobileapp.data.interceptors.AuthInterceptor
 import com.example.bytebattlesmobileapp.data.network.*
+import com.example.bytebattlesmobileapp.data.network.dto.auth.RefreshTokenRequest
 import com.example.bytebattlesmobileapp.data.repository.AuthRepositoryImpl
 import com.example.bytebattlesmobileapp.data.repository.BattleRepositoryImpl
 import com.example.bytebattlesmobileapp.data.repository.SolutionRepositoryImpl
@@ -31,10 +32,10 @@ import io.ktor.client.request.header
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import javax.inject.Named
 import javax.inject.Singleton
-
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -61,11 +62,11 @@ object AppModule {
         return AuthInterceptor(tokenManager)
     }
 
-    // HttpClient для аутентификационных запросов (логин/регистрация)
+    // 1. HttpClient для НЕаутентифицированных запросов (логин/регистрация/refresh)
     @Provides
     @Singleton
-    @Named("authHttpClient")
-    fun provideAuthHttpClient(
+    @Named("unauthHttpClient")
+    fun provideUnauthHttpClient(
         json: Json,
         @ApplicationContext context: Context
     ): HttpClient {
@@ -81,7 +82,7 @@ object AppModule {
                 install(Logging) {
                     logger = object : Logger {
                         override fun log(message: String) {
-                            android.util.Log.d("Ktor-Auth", message)
+                            android.util.Log.d("Ktor-Unauth", message)
                         }
                     }
                     level = LogLevel.ALL
@@ -100,13 +101,24 @@ object AppModule {
         }
     }
 
-    // HttpClient для аутентифицированных запросов (с Bearer токеном)
+    // 2. ОТДЕЛЬНЫЙ AuthApiService для обновления токена (без циклической зависимости)
     @Provides
     @Singleton
-    @Named("authenticatedHttpClient")
-    fun provideAuthenticatedHttpClient(
+    @Named("refreshAuthApiService")
+    fun provideRefreshAuthApiService(
+        @Named("unauthHttpClient") client: HttpClient
+    ): AuthApiService {
+        return AuthApiServiceImpl(client)
+    }
+
+    // 3. HttpClient для аутентифицированных запросов (использует refreshAuthApiService)
+    @Provides
+    @Singleton
+    @Named("authHttpClient")
+    fun provideAuthHttpClient(
         json: Json,
         tokenManager: TokenManager,
+        @Named("refreshAuthApiService") authApiService: AuthApiService, // Используем refreshAuthApiService
         @ApplicationContext context: Context
     ): HttpClient {
         return HttpClient(Android) {
@@ -121,7 +133,7 @@ object AppModule {
                 install(Logging) {
                     logger = object : Logger {
                         override fun log(message: String) {
-                            android.util.Log.d("Ktor-Authenticated", message)
+                            android.util.Log.d("Ktor-Auth", message)
                         }
                     }
                     level = LogLevel.HEADERS
@@ -132,28 +144,81 @@ object AppModule {
                 json(json)
             }
 
-            // Плагин Auth с Bearer токеном
+            // Добавляем Bearer аутентификацию с обновлением токена
             install(Auth) {
                 bearer {
                     loadTokens {
-                        // Получаем токен
-                        val token = tokenManager.getAccessToken().firstOrNull()
+                        val token = runBlocking { tokenManager.getAccessToken().firstOrNull() }
                         token?.let {
-                            val tokens = tokenManager.getTokens()
-                            val refreshToken = tokens?.second ?: it
-                            BearerTokens(it, refreshToken)
+                            BearerTokens(accessToken = it, refreshToken = "")
                         }
                     }
 
                     refreshTokens {
-                        // Реализация обновления токена
-                        val tokens = tokenManager.getTokens()
-                        if (tokens != null) {
-                            // Здесь можно вызвать API для обновления токена
-                            BearerTokens(tokens.first, tokens.second)
-                        } else {
-                            null
+                        // Логика обновления токена
+                        try {
+                            android.util.Log.d("TokenRefresh", "Attempting to refresh token...")
+
+                            // Получаем refresh токен
+                            val refreshToken = runBlocking {
+                                tokenManager.getTokens()?.second
+                            } ?: throw AuthException("No refresh token available")
+
+                            // Получаем access токен
+                            val accessToken = runBlocking {
+                                tokenManager.getAccessToken().firstOrNull()
+                            } ?: throw AuthException("No access token available")
+
+                            // Вызываем refresh endpoint через refreshAuthApiService
+                            val response = authApiService.refreshToken(
+                                RefreshTokenRequest(accessToken, refreshToken)
+                            )
+
+                            // Сохраняем новые токены
+                            runBlocking {
+                                tokenManager.saveToken(
+                                    response.accessToken,
+                                    response.refreshToken
+                                )
+                            }
+
+                            android.util.Log.d("TokenRefresh", "Token refreshed successfully")
+
+                            response.refreshToken?.let {
+                                BearerTokens(
+                                    accessToken = response.accessToken,
+                                    refreshToken = it
+                                )
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("TokenRefresh", "Failed to refresh token", e)
+                            // Очищаем токены и выбрасываем исключение
+                            runBlocking {
+                                tokenManager.clearTokens()
+                            }
+                            throw AuthException("Token refresh failed")
                         }
+                    }
+
+                    // Для каких эндпоинтов НЕ отправлять токен
+                    sendWithoutRequest { request ->
+                        request.url.encodedPath.contains("/auth/") ||
+                                request.url.encodedPath.contains("/register") ||
+                                request.url.encodedPath.contains("/public/")
+                    }
+                }
+            }
+
+            // Обработчик ответов для автоматической обработки 401
+            HttpResponseValidator {
+                validateResponse { response ->
+                    val statusCode = response.status.value
+                    when (statusCode) {
+                        401 -> {
+                            android.util.Log.d("AuthHttpClient", "Received 401, triggering token refresh")
+                        }
+                        in 400..499 -> throw ClientRequestException(response, "Client error: $statusCode")
+                        in 500..599 -> throw ServerResponseException(response, "Server error: $statusCode")
                     }
                 }
             }
@@ -163,19 +228,30 @@ object AppModule {
                 connectTimeoutMillis = 10000L
                 socketTimeoutMillis = 10000L
             }
+
+            // Добавляем заголовок авторизации по умолчанию
+            install(DefaultRequest) {
+                val token = runBlocking { tokenManager.getAccessToken().firstOrNull() }
+                token?.let {
+                    header(HttpHeaders.Authorization, "Bearer $it")
+                }
+            }
         }
     }
+
+    // 4. HttpClient для WebSocket (также использует refreshAuthApiService)
     @Provides
     @Singleton
     @Named("webSocketClient")
     fun provideWebSocketClient(
         json: Json,
         tokenManager: TokenManager,
+        @Named("refreshAuthApiService") authApiService: AuthApiService // Используем refreshAuthApiService
     ): HttpClient {
-        return HttpClient(CIO) { // CIO движок для WebSocket
+        return HttpClient(CIO) {
             install(WebSockets) {
                 maxFrameSize = Long.MAX_VALUE
-                pingInterval = 20_000 // Пинг каждые 20 секунд для поддержания соединения
+                pingInterval = 20_000
             }
 
             install(HttpTimeout) {
@@ -188,6 +264,51 @@ object AppModule {
                 json(json)
             }
 
+            // Для WebSocket также добавляем логику обновления токена
+            install(Auth) {
+                bearer {
+                    loadTokens {
+                        val token = runBlocking { tokenManager.getAccessToken().firstOrNull() }
+                        token?.let {
+                            BearerTokens(accessToken = it, refreshToken = "")
+                        }
+                    }
+
+                    refreshTokens {
+                        try {
+                            val refreshToken = runBlocking {
+                                tokenManager.getTokens()?.second
+                            } ?: throw AuthException("No refresh token")
+
+                            val accessToken = runBlocking {
+                                tokenManager.getAccessToken().firstOrNull()
+                            } ?: throw AuthException("No access token available")
+
+                            val response = authApiService.refreshToken(
+                                RefreshTokenRequest(accessToken, refreshToken)
+                            )
+
+                            runBlocking {
+                                tokenManager.saveToken(
+                                    response.accessToken,
+                                    response.refreshToken
+                                )
+                            }
+
+                            response.refreshToken?.let {
+                                BearerTokens(
+                                    accessToken = response.accessToken,
+                                    refreshToken = it
+                                )
+                            }
+                        } catch (e: Exception) {
+                            runBlocking { tokenManager.clearTokens() }
+                            throw AuthException("WebSocket token refresh failed")
+                        }
+                    }
+                }
+            }
+
             if (BuildConfig.DEBUG) {
                 install(Logging) {
                     logger = object : Logger {
@@ -197,29 +318,30 @@ object AppModule {
                     }
                     level = LogLevel.HEADERS
                 }
-
             }
         }
     }
+
     @Provides
     @Singleton
     fun providePlayerIdManager(@ApplicationContext context: Context): PlayerIdManager {
         return PlayerIdManager(context)
     }
 
-    // API сервисы - ВАЖНО: исправьте эти методы
+    // 5. ОСНОВНОЙ AuthApiService (для логина/регистрации, использует authHttpClient)
     @Provides
     @Singleton
     fun provideAuthApiService(
-        @Named("authHttpClient") client: HttpClient  // Добавьте @Named аннотацию
+        @Named("authHttpClient") client: HttpClient
     ): AuthApiService {
         return AuthApiServiceImpl(client)
     }
 
+    // Другие API сервисы
     @Provides
     @Singleton
     fun provideTaskApiService(
-        @Named("authenticatedHttpClient") client: HttpClient,  // Добавьте @Named аннотацию
+        @Named("authHttpClient") client: HttpClient,
         tokenManager: TokenManager
     ): TaskApiService {
         return TaskApiServiceImpl(client, tokenManager)
@@ -228,7 +350,7 @@ object AppModule {
     @Provides
     @Singleton
     fun provideUserApiService(
-        @Named("authenticatedHttpClient") client: HttpClient  // Добавьте @Named аннотацию
+        @Named("authHttpClient") client: HttpClient
     ): UserApiService {
         return UserApiServiceImpl(client)
     }
@@ -236,16 +358,17 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSolutionApiService(
-        @Named("authenticatedHttpClient") client: HttpClient  // Добавьте @Named аннотацию
+        @Named("authHttpClient") client: HttpClient
     ): SolutionApiService {
         return SolutionApiServiceImpl(client)
     }
+
     @Provides
     @Singleton
     fun provideBattleApiService(
         @Named("webSocketClient") client: HttpClient,
         json: Json,
-        tokenManager: TokenManager // Добавляем TokenManager
+        tokenManager: TokenManager
     ): BattleApiService {
         return BattleApiServiceImpl(client, json, tokenManager)
     }
@@ -254,7 +377,7 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAuthRepository(
-        authApi: AuthApiService,
+        authApi: AuthApiService, // основной authApi
         tokenManager: TokenManager
     ): AuthRepository {
         return AuthRepositoryImpl(authApi, tokenManager)
@@ -293,8 +416,6 @@ object AppModule {
     }
 }
 
-
-
 @Module
 @InstallIn(SingletonComponent::class)
 object UseCaseModule {
@@ -309,6 +430,12 @@ object UseCaseModule {
     @Singleton
     fun provideRegisterUseCase(repository: AuthRepository): RegisterUseCase {
         return RegisterUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRefreshTokenUseCase(repository: AuthRepository): RefreshTokenUseCase {
+        return RefreshTokenUseCase(repository)
     }
 
     @Provides
@@ -425,6 +552,7 @@ object UseCaseModule {
     }
 
 }
+
 
 class AuthException(message: String) : Exception(message)
 class RefreshTokenException(message: String) : Exception(message)

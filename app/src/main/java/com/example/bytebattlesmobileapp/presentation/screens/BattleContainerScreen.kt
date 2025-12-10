@@ -10,7 +10,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,6 +36,35 @@ fun BattleContainerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val taskId by viewModel.taskId.collectAsStateWithLifecycle()
 
+    var isCreatingRoom by remember { mutableStateOf<Boolean?>(null) }
+
+    // Отслеживаем, когда комната создана и мы должны перейти в лобби
+    var shouldShowLobby by remember { mutableStateOf(false) }
+
+    // Подключаемся при загрузке
+    LaunchedEffect(Unit) {
+        if (!uiState.isConnected) {
+            viewModel.connect()
+        }
+    }
+
+    // Обработка начального roomId
+    LaunchedEffect(initialRoomId, uiState.isConnected) {
+        if (initialRoomId != null && uiState.isConnected && isCreatingRoom == null) {
+            // Автоматически присоединяемся к комнате если пришел roomId
+            viewModel.joinRoom(initialRoomId)
+            shouldShowLobby = true
+        }
+    }
+
+    // Когда комната создана/присоединена, показываем лобби
+    LaunchedEffect(uiState.roomId, uiState.isConnected) {
+        if (uiState.roomId.isNotEmpty() && uiState.isConnected) {
+            // Если комната есть и мы подключены, показываем лобби
+            shouldShowLobby = true
+        }
+    }
+
     // Отслеживаем завершение битвы
     LaunchedEffect(uiState.battleState) {
         if (uiState.battleState is BattleRoomState.Finished) {
@@ -45,11 +76,17 @@ fun BattleContainerScreen(
         }
     }
 
+    // Отслеживаем переход в игру
+    LaunchedEffect(uiState.battleState, taskId) {
+        if (uiState.battleState is BattleRoomState.GameStarted && taskId != null) {
+            // Переходим на экран игры
+            onNavigateToGame(taskId!!, uiState.roomId)
+        }
+    }
+
     // Определяем, что показывать
     when {
         uiState.battleState is BattleRoomState.Finished -> {
-            // Можно показать отдельный экран результатов
-            // или просто вернуться на главный через несколько секунд
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -70,7 +107,23 @@ fun BattleContainerScreen(
                 onNavigateBack()
             }
         }
-        uiState.roomId.isEmpty() || !uiState.isConnected && uiState.taskId!!.isEmpty() -> {
+
+        // Если мы уже в комнате, показываем лобби
+        shouldShowLobby && uiState.roomId.isNotEmpty() -> {
+            BattleLobbyScreen(
+                onNavigateBack = {
+                    viewModel.leaveRoom()
+                    viewModel.disconnect()
+                    shouldShowLobby = false
+                    isCreatingRoom = null
+                },
+                onNavigateToGame = onNavigateToGame,
+                viewModel = viewModel
+            )
+        }
+
+        // Если пользователь выбрал создание комнаты
+        isCreatingRoom == true -> {
             BattleScreen(
                 onNavigateBack = {
                     viewModel.disconnect()
@@ -80,26 +133,24 @@ fun BattleContainerScreen(
                 viewModel = viewModel,
             )
         }
-        uiState.roomId.isNotEmpty() || uiState.isConnected -> {
-            BattleLobbyScreen(
-                onNavigateBack = {
-                    viewModel.leaveRoom()
-                    viewModel.disconnect()
-                    onNavigateBack()
-                },
-                onNavigateToGame = onNavigateToGame,
-                viewModel = viewModel
+
+        // Если пользователь выбрал присоединение к комнате
+        isCreatingRoom == false -> {
+            JoinRoomScreen(
+                onNavigateBack = { isCreatingRoom = null },
             )
         }
+
+        // Экран выбора (по умолчанию)
         else -> {
-            TrainBattleScreen(
+            BattleSelectionScreen(
                 onNavigateBack = {
-                    viewModel.leaveRoom()
                     viewModel.disconnect()
                     onNavigateBack()
                 },
-                taskId = uiState.taskId ?: "",
-                roomId = uiState.roomId
+                onCreateRoomClick = { isCreatingRoom = true },
+                onJoinRoomClick = { isCreatingRoom = false },
+                viewModel = viewModel
             )
         }
     }

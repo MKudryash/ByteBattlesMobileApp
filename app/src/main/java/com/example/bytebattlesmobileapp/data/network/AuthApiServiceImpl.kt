@@ -24,7 +24,7 @@ class AuthApiServiceImpl(private val client: HttpClient) : AuthApiService {
     }
 
     override suspend fun refreshToken(request: RefreshTokenRequest): AuthResponse {
-        return client.post("auth/refresh") {
+        return client.post("auth/refresh-token") {
             setBody(request)
         }.body()
     }

@@ -122,6 +122,9 @@ class BattleLobbyViewModel @Inject constructor(
             }
 
             is IncomingBattleMessage.JoinedRoom -> {
+                println("BattleLobbyViewModel: Joined to room - roomId=${message.roomId}, roomName=${message.roomName}, participants=${message.participants}")
+
+                // Создаем себя как участника
                 val currentPlayer = BattleParticipant(
                     id = _uiState.value.playerId,
                     name = "Вы",
@@ -129,41 +132,152 @@ class BattleLobbyViewModel @Inject constructor(
                     isConnected = true
                 )
 
-                _uiState.update {
-                    it.copy(
-                        roomId = message.roomId,
-                        roomName = message.roomName,
-                        battleState = BattleRoomState.WaitingForPlayers,
-                        participants = listOf(currentPlayer),
-                        participantsCount = 1,
-                        readyCount = 0,
-                        isLoading = false
-                    )
+                // В сообщении JoinedRoom есть participants - общее количество участников
+                // Если участников больше 1, значит есть другие игроки в комнате
+                val totalParticipants = message.participants
+
+                if (totalParticipants > 1) {
+                    println("BattleLobbyViewModel: Room has ${totalParticipants} participants. Creating placeholder for other players.")
+
+                    // Для других участников создаем заглушки
+                    // Они будут заполнены реальными данными при получении PlayerReadyChanged
+                    val otherParticipants = (2..totalParticipants).map { index ->
+                        BattleParticipant(
+                            id = "placeholder_$index", // Временный ID
+                            name = "Игрок $index",
+                            isReady = false,
+                            isConnected = true
+                        )
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            roomId = message.roomId,
+                            roomName = message.roomName,
+                            battleState = BattleRoomState.WaitingForPlayers,
+                            participants = listOf(currentPlayer) + otherParticipants,
+                            participantsCount = totalParticipants,
+                            readyCount = 0,
+                            isLoading = false
+                        )
+                    }
+                } else {
+                    // Только я в комнате
+                    _uiState.update {
+                        it.copy(
+                            roomId = message.roomId,
+                            roomName = message.roomName,
+                            battleState = BattleRoomState.WaitingForPlayers,
+                            participants = listOf(currentPlayer),
+                            participantsCount = 1,
+                            readyCount = 0,
+                            isLoading = false
+                        )
+                    }
                 }
+                println("BattleLobbyViewModel: Successfully joined room. RoomId: ${message.roomId}")
+            }
+
+            // Обновляем обработку PlayerReadyChanged чтобы обновлять реальных участников
+            is IncomingBattleMessage.PlayerReadyChanged -> {
+                println("BattleLobbyViewModel: PlayerReadyChanged - playerId=${message.playerId}, isReady=${message.isReady}, readyCount=${message.readyCount}, totalPlayers=${message.totalPlayers}")
+
+                // Ищем участника с таким ID
+                val participantExists = _uiState.value.participants.any { it.id == message.playerId }
+
+                _uiState.update { currentState ->
+                    if (participantExists) {
+                        // Обновляем существующего участника
+                        val updatedParticipants = currentState.participants.map { participant ->
+                            if (participant.id == message.playerId) {
+                                participant.copy(isReady = message.isReady)
+                            } else {
+                                participant
+                            }
+                        }
+
+                        currentState.copy(
+                            participants = updatedParticipants,
+                            readyCount = message.readyCount,
+                            participantsCount = message.totalPlayers
+                        )
+                    } else if (message.playerId != currentState.playerId) {
+                        // Это новый участник (не я) - добавляем его
+                        println("BattleLobbyViewModel: Adding new participant from PlayerReadyChanged: ${message.playerId}")
+
+                        val newParticipant = BattleParticipant(
+                            id = message.playerId,
+                            name = "Игрок ${message.playerId.takeLast(4)}",
+                            isReady = message.isReady,
+                            isConnected = true
+                        )
+
+                        // Заменяем placeholder на реального участника
+                        val updatedParticipants = if (currentState.participants.any { it.id.startsWith("placeholder_") }) {
+                            // Заменяем первый placeholder
+                            val placeholders = currentState.participants.filter { it.id.startsWith("placeholder_") }
+                            if (placeholders.isNotEmpty()) {
+                                val firstPlaceholder = placeholders.first()
+                                currentState.participants.map {
+                                    if (it.id == firstPlaceholder.id) newParticipant else it
+                                }
+                            } else {
+                                currentState.participants + newParticipant
+                            }
+                        } else {
+                            currentState.participants + newParticipant
+                        }
+
+                        currentState.copy(
+                            participants = updatedParticipants,
+                            readyCount = message.readyCount,
+                            participantsCount = message.totalPlayers
+                        )
+                    } else {
+                        // Это я - обновляем только счетчики
+                        currentState.copy(
+                            readyCount = message.readyCount,
+                            participantsCount = message.totalPlayers
+                        )
+                    }
+                }
+                println("BattleLobbyViewModel: Player ready changed. readyCount=${message.readyCount}, totalPlayers=${message.totalPlayers}")
             }
 
             is IncomingBattleMessage.PlayerJoined -> {
-                val newParticipant = BattleParticipant(
-                    id = message.playerId,
-                    name = "Игрок ${message.playerId.takeLast(4)}",
-                    isReady = false,
-                    isConnected = true
-                )
+                println("BattleLobbyViewModel: PlayerJoined - playerId=${message.playerId}, participants=${message.participants}")
 
-                _uiState.update { currentState ->
-                    val participantExists =
-                        currentState.participants.any { it.id == message.playerId }
-                    if (!participantExists) {
-                        currentState.copy(
-                            participants = currentState.participants + newParticipant,
-                            participantsCount = message.participants
-                        )
-                    } else {
-                        currentState.copy(participantsCount = message.participants)
+                // Если это не я сам
+                if (message.playerId != _uiState.value.playerId) {
+                    val newParticipant = BattleParticipant(
+                        id = message.playerId,
+                        name = "Игрок ${message.playerId.takeLast(4)}",
+                        isReady = false,
+                        isConnected = true
+                    )
+
+                    _uiState.update { currentState ->
+                        val participantExists = currentState.participants.any { it.id == message.playerId }
+                        if (!participantExists) {
+                            val updatedParticipants = currentState.participants + newParticipant
+                            println("BattleLobbyViewModel: Added new participant. Total now: ${updatedParticipants.size}")
+                            currentState.copy(
+                                participants = updatedParticipants,
+                                participantsCount = message.participants
+                            )
+                        } else {
+                            println("BattleLobbyViewModel: Participant already exists, updating count")
+                            currentState.copy(participantsCount = message.participants)
+                        }
+                    }
+                } else {
+                    // Это я сам - обновляем только количество
+                    _uiState.update {
+                        it.copy(participantsCount = message.participants)
                     }
                 }
-                println("BattleLobbyViewModel: Player joined. Total participants: ${_uiState.value.participants.size}")
             }
+
 
             is IncomingBattleMessage.PlayerLeft -> {
                 _uiState.update { currentState ->
@@ -239,22 +353,40 @@ class BattleLobbyViewModel @Inject constructor(
             }
 
             is IncomingBattleMessage.RoomStatus -> {
-                println("BattleLobbyViewModel: RoomStatus received - participants=${message.participantCount}, ready=${message.readyCount}")
+                println("BattleLobbyViewModel: RoomStatus received - roomId=${message.roomId}, participants=${message.participantCount}, ready=${message.readyCount}, isActive=${message.isActive}")
 
+                // Обработка статуса комнаты когда мы присоединились к существующей
                 _uiState.update { currentState ->
+                    // Если мы только что присоединились и список участников пустой
+                    // или количество участников больше чем у нас в списке
                     if (currentState.participants.isEmpty() && message.participantCount > 0) {
+                        println("BattleLobbyViewModel: Initializing participants from RoomStatus")
+
+                        // Создаем себя
                         val selfParticipant = BattleParticipant(
                             id = currentState.playerId,
                             name = "Вы",
                             isReady = false,
                             isConnected = true
                         )
+
+                        // Для других участников создаем заглушки
+                        val otherParticipants = (1 until message.participantCount).map { index ->
+                            BattleParticipant(
+                                id = "unknown_$index",
+                                name = "Игрок $index",
+                                isReady = false,
+                                isConnected = true
+                            )
+                        }
+
                         currentState.copy(
-                            participants = listOf(selfParticipant),
+                            participants = listOf(selfParticipant) + otherParticipants,
                             participantsCount = message.participantCount,
                             readyCount = message.readyCount
                         )
                     } else {
+                        // Обновляем счетчики
                         currentState.copy(
                             participantsCount = message.participantCount,
                             readyCount = message.readyCount
@@ -502,16 +634,54 @@ class BattleLobbyViewModel @Inject constructor(
 
     fun joinRoom(roomId: String) {
         viewModelScope.launch {
+            println("BattleLobbyViewModel: Attempting to join room: $roomId")
+
             try {
-                _uiState.update { it.copy(isLoading = true) }
-                joinRoomUseCase(roomId)
+                _uiState.update { it.copy(isLoading = true, connectionError = null) }
+
+                if (!uiState.value.isConnected) {
+                    println("BattleLobbyViewModel: Not connected, connecting first...")
+                    connect()
+                    // Ждем подключения
+                    delay(1000)
+
+                    if (!uiState.value.isConnected) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                battleState = BattleRoomState.Error("Не удалось подключиться"),
+                                connectionError = "Ошибка подключения"
+                            )
+                        }
+                        return@launch
+                    }
+                }
+
+                println("BattleLobbyViewModel: Calling joinRoomUseCase with roomId: $roomId")
+                val result = joinRoomUseCase(roomId)
+
+                println("BattleLobbyViewModel: Join room result: $result")
+
+                // Ждем немного чтобы получить сообщения от сервера
+                delay(500)
+
+                // Если после присоединения у нас все еще только 1 участник,
+                // возможно нужно запросить статус комнаты явно
+                if (_uiState.value.participantsCount <= 1) {
+                    println("BattleLobbyViewModel: Only 1 participant after join, might need to request room status")
+                    // Здесь можно отправить запрос на получение статуса комнаты
+                    // если ваш протокол это поддерживает
+                }
+
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        battleState = BattleRoomState.Error("Ошибка входа в комнату")
+                        battleState = BattleRoomState.Error("Ошибка входа в комнату: ${e.message}"),
+                        connectionError = e.message ?: "Неизвестная ошибка"
                     )
                 }
+                println("BattleLobbyViewModel: Exception in joinRoom: ${e.message}")
             }
         }
     }

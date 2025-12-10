@@ -30,6 +30,9 @@ sealed class Screen(val route: String, val screenType: ScreenType) {
     object TaskInfo : Screen("task_info/{taskId}", ScreenType.WithoutBottomNav) {
         fun createRoute(taskId: String) = "task_info/$taskId"
     }
+    object JoinRoom: Screen("battle/join", ScreenType.WithoutBottomNav) {}
+    object BattleChoice: Screen("battle/choice", ScreenType.WithoutBottomNav) {
+    }
     object Train : Screen("train/{taskId}", ScreenType.WithoutBottomNav){
         fun createRoute(taskId: String) = "train/$taskId"
     }

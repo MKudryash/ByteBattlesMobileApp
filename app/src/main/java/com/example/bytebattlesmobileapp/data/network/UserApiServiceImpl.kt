@@ -1,5 +1,6 @@
 package com.example.bytebattlesmobileapp.data.network
 
+import com.example.bytebattlesmobileapp.data.network.dto.AchievementDto
 import com.example.bytebattlesmobileapp.data.network.dto.ActivitiesDto
 import com.example.bytebattlesmobileapp.data.network.dto.battle.*
 import com.example.bytebattlesmobileapp.data.network.dto.user.*
@@ -29,6 +30,10 @@ class UserApiServiceImpl(private val client: HttpClient) : UserApiService {
 
     override suspend fun getRecentActivities(): List<ActivitiesDto> {
         return client.get("user-profiles/me/recent-activities").body()
+    }
+
+    override suspend fun getAchievements(): List<AchievementDto> {
+      return client.get("user-profiles/achievements").body()
     }
 
 }

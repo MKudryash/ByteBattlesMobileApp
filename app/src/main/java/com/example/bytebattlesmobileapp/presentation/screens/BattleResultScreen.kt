@@ -92,34 +92,14 @@ fun BattleResultScreen(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // Кнопка возврата (появится через 3 секунды)
-                    var showButton by remember { mutableStateOf(false) }
 
                     LaunchedEffect(Unit) {
-                        delay(3000) // Показываем результат 3 секунды
-                        showButton = true
+                        delay(10000)
+
                     }
 
-                    if (showButton) {
-                        Button(
-                            onClick = onDismiss,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White,
-                                contentColor = if (isWinner) Color(0xFF2E7D32) else Color(0xFFC62828)
-                            )
-                        ) {
-                            Text(
-                                text = "ВЕРНУТЬСЯ НА ГЛАВНЫЙ",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    } else {
-                        // Таймер обратного отсчета
-                        var countdown by remember { mutableStateOf(3) }
+
+                        var countdown by remember { mutableStateOf(10) }
 
                         LaunchedEffect(Unit) {
                             repeat(3) {
@@ -133,7 +113,7 @@ fun BattleResultScreen(
                             color = Color.White.copy(alpha = 0.7f),
                             fontSize = 14.sp
                         )
-                    }
+
                 }
             }
         }

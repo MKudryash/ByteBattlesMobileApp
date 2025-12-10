@@ -19,7 +19,11 @@ class RegisterUseCase(private val repository: AuthRepository) {
     }
 }
 
-
+class RefreshTokenUseCase(private val repository: AuthRepository){
+    suspend operator fun invoke(): String {
+        return repository.refreshToken()
+    }
+}
 // Task Use Cases
 class GetTasksWithPaginationUseCase(private val repository: TaskRepository) {
     suspend operator fun invoke(page:Int=1,pageSize:Int=10,searchTerm:String?,
