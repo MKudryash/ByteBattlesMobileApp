@@ -32,7 +32,13 @@ import com.example.bytebattlesmobileapp.presentation.components.UserAvatar
 import java.nio.file.WatchEvent
 
 @Composable
-fun SideScreen() {
+fun SideScreen(
+    name: String?,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToTasks: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToLogOut: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -41,18 +47,21 @@ fun SideScreen() {
     ) {
 
         Spacer(Modifier.height(70.dp))
-        UserAvatar(modifier = Modifier.size(100.dp),
-            initials = "name",
+        UserAvatar(
+            modifier = Modifier.size(100.dp),
+            initials = name,
             imagePainter = painterResource(R.drawable.userprofile),// или painterResource
-            showIcon = true)
+            showIcon = true
+        )
         Spacer(Modifier.height(30.dp))
 
         Text(
-            text =  "Ivan Ivanovich",
+            text = "Ivan Ivanovich",
             color = Color.White,
             fontWeight = FontWeight.Normal,
             fontSize = 24.sp,
-            fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)))
+            fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold))
+        )
 
         Spacer(Modifier.height(50.dp))
 
@@ -60,28 +69,27 @@ fun SideScreen() {
         var menu = listOf(
             MenuData(
                 painterResource(R.drawable.menu_profile),
-                "Профиль",
-                {}),
+                "Профиль"
+            ) { onNavigateToProfile() },
             MenuData(
                 painterResource(R.drawable.menu_tasks),
-                "Задания",
-                {}),
+                "Задания"
+            ) { onNavigateToTasks() },
             MenuData(
                 painterResource(R.drawable.menu_favorite),
-                "ИЗбранное",
-                {}),
+                "Избранное"
+            ) {},
             MenuData(
                 painterResource(R.drawable.menu_profile),
-                "Награды",
-                {}),
+                "Награды"
+            ) {  },
             MenuData(
                 painterResource(R.drawable.menu_notification),
-                "Уведомления",
-                {}),
+                "Уведомления"){},
             MenuData(
                 painterResource(R.drawable.menu_setting),
-                "Настройки",
-                {})
+                "Настройки"
+            ) { onNavigateToSettings() }
         )
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(30.dp)
@@ -97,11 +105,12 @@ fun SideScreen() {
                 .fillMaxWidth()
                 .height(2.dp)
                 .clip(RoundedCornerShape(50))
-                .background( color = Color(0xFF5EC2C3),)
+                .background(color = Color(0xFF5EC2C3))
         )
         Spacer(Modifier.height(30.dp))
-        SideMenu(painterResource(R.drawable.mune_exit),
-            "Выход", {})
+        SideMenu(
+            painterResource(R.drawable.mune_exit),
+            "Выход", {onNavigateToLogOut()})
 
     }
 }
@@ -115,5 +124,5 @@ data class MenuData(
 @Preview
 @Composable
 fun SideScreenPreview() {
-    SideScreen()
+    SideScreen("", {}, {}, {}, {})
 }

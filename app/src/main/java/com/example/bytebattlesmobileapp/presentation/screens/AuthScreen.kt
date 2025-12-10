@@ -18,10 +18,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -64,34 +69,17 @@ fun AuthScreen(
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
 
-
-
-
+    // Следим за ошибками
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { errorMessage ->
+            Log.e("AuthScreen", "Auth error: $errorMessage")
+        }
+    }
 
     LaunchedEffect(shouldNavigateToMain) {
         if (shouldNavigateToMain) {
             onNavigateToMain()
             authViewModel.navigationHandled()
-        }
-    }
-
-    if (uiState.isLoading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF2C3646)),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
-    // Показываем ошибку, если есть
-    uiState.errorMessage?.let { errorMessage ->
-        LaunchedEffect(errorMessage) {
-            // Можно показать Snackbar или другое уведомление
-            Log.e("AuthScreen", errorMessage)
         }
     }
 
@@ -120,8 +108,7 @@ fun AuthScreen(
                                 .padding(top = 45.dp, start = 20.dp),
                             horizontalArrangement = Arrangement.Start
                         ) {
-                            BackArrow(
-                                { onNavigateBack() })
+                            BackArrow({ onNavigateBack() })
                         }
 
                         Spacer(modifier = Modifier.height(60.dp))
@@ -129,9 +116,6 @@ fun AuthScreen(
                         Text(
                             "Добро пожаловать обратно!".uppercase(),
                             color = Color.White,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp),
                             fontSize = 30.sp,
                             fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
                             lineHeight = 40.sp
@@ -142,10 +126,7 @@ fun AuthScreen(
                         Text(
                             "Продолжайте свое приключение!",
                             color = Color.White,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp),
-                            fontSize = 17.sp,
+                            fontSize = 20.sp,
                             fontFamily = FontFamily(Font(R.font.ibmplexmono_regular))
                         )
                     }
@@ -156,10 +137,23 @@ fun AuthScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(40.dp))
+
+            // Отображение ошибки
+            uiState.errorMessage?.let { error ->
+                ErrorMessageCard(error)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             CustomUnderlinedTextField(
                 value = email.value,
-                onValueChange = { email.value = it },
+                onValueChange = {
+                    email.value = it
+                    // Очищаем ошибку при изменении email
+                    if (uiState.errorMessage != null) {
+                        authViewModel.clearError()
+                    }
+                },
                 placeholder = "Почта",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -170,7 +164,13 @@ fun AuthScreen(
 
             CustomUnderlinedTextField(
                 value = password.value,
-                onValueChange = { password.value = it },
+                onValueChange = {
+                    password.value = it
+                    // Очищаем ошибку при изменении пароля
+                    if (uiState.errorMessage != null) {
+                        authViewModel.clearError()
+                    }
+                },
                 placeholder = "Пароль",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -192,26 +192,45 @@ fun AuthScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+
             Spacer(modifier = Modifier.height(40.dp))
 
-            ActionButton(
-                text = "ВОЙТИ",
-                onClick = {
-                    authViewModel.login(
-                            email.value,
-                            password.value
-                        )
-
-                    //onNavigateToMain()
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .height(60.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF5EC2C3),
+                        strokeWidth = 3.dp
+                    )
+                }
+            } else {
+                ActionButton(
+                    text = "ВОЙТИ",
+                    onClick = {
+                        if (email.value.isBlank() || password.value.isBlank()) {
+                            authViewModel.clearError()
+                            // Можно показать ошибку о пустых полях
+                        } else {
+                            authViewModel.login(email.value, password.value)
+                        }
                     },
-                color = Color(0xFF5EC2C3),
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .height(60.dp)
-            )
+                    color = Color(0xFF5EC2C3),
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .height(60.dp),
+                    enabled = email.value.isNotBlank() && password.value.isNotBlank() && !uiState.isLoading
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End // ← Выравнивание по правому краю
+                horizontalArrangement = Arrangement.End
             ) {
                 LinkText(
                     modifier = Modifier.padding().alpha(0.7f),
@@ -219,9 +238,107 @@ fun AuthScreen(
                     onClick = { }
                 )
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
+}
 
+@Composable
+fun ErrorMessageCard(error: String) {
+    val parsedError = parseAuthError(error)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 40.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF56565).copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.error), // Добавьте иконку ошибки
+                contentDescription = "Ошибка",
+                tint = Color(0xFFF56565),
+                modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = parsedError.title,
+                    color = Color(0xFFF56565),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+
+                Text(
+                    text = parsedError.message,
+                    color = Color(0xFFF56565),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+data class ParsedAuthError(
+    val title: String,
+    val message: String
+)
+
+fun parseAuthError(errorMessage: String): ParsedAuthError {
+    return when {
+        errorMessage.contains("Invalid credentials", ignoreCase = true) ->
+            ParsedAuthError(
+                title = "Ошибка авторизации",
+                message = "Неверный email или пароль. Проверьте правильность введенных данных."
+            )
+
+        errorMessage.contains("Network is unreachable", ignoreCase = true) ||
+                errorMessage.contains("Failed to connect", ignoreCase = true) ->
+            ParsedAuthError(
+                title = "Нет подключения",
+                message = "Проверьте подключение к интернету и попробуйте снова."
+            )
+
+        errorMessage.contains("timeout", ignoreCase = true) ->
+            ParsedAuthError(
+                title = "Таймаут соединения",
+                message = "Сервер не отвечает. Попробуйте позже."
+            )
+
+        else -> ParsedAuthError(
+            title = "Ошибка",
+            message = errorMessage
+        )
+    }
+}
+
+@Composable
+fun LinkText(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = text,
+        color = Color(0xFF5EC2C3),
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium,
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    )
 }
 
 @Preview(showBackground = true)

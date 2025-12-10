@@ -215,10 +215,21 @@ object AppModule {
                     val statusCode = response.status.value
                     when (statusCode) {
                         401 -> {
-                            android.util.Log.d("AuthHttpClient", "Received 401, triggering token refresh")
+                            android.util.Log.d(
+                                "AuthHttpClient",
+                                "Received 401, triggering token refresh"
+                            )
                         }
-                        in 400..499 -> throw ClientRequestException(response, "Client error: $statusCode")
-                        in 500..599 -> throw ServerResponseException(response, "Server error: $statusCode")
+
+                        in 400..499 -> throw ClientRequestException(
+                            response,
+                            "Client error: $statusCode"
+                        )
+
+                        in 500..599 -> throw ServerResponseException(
+                            response,
+                            "Server error: $statusCode"
+                        )
                     }
                 }
             }
@@ -440,6 +451,12 @@ object UseCaseModule {
 
     @Provides
     @Singleton
+    fun provideChangePasswordUseCase(repository: AuthRepository): ChangePasswordUseCase {
+        return ChangePasswordUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
     fun provideGetTasksUseCase(repository: TaskRepository): GetTasksUseCase {
         return GetTasksUseCase(repository)
     }
@@ -494,9 +511,16 @@ object UseCaseModule {
 
     @Provides
     @Singleton
+    fun provideGetUserAchievementsUseCase(repository: UserRepository): GetUserAchievementsUseCase {
+        return GetUserAchievementsUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
     fun providerSubmitSolutionUseCase(repository: SolutionRepository): SubmitSolutionUseCase {
         return SubmitSolutionUseCase(repository)
     }
+
     @Provides
     @Singleton
     fun provideConnectBattleUseCase(repository: BattleRepository): ConnectBattleUseCase {

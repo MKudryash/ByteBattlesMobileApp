@@ -13,11 +13,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,20 +35,44 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bytebattlesmobileapp.R
 import com.example.bytebattlesmobileapp.presentation.components.ActionButton
 import com.example.bytebattlesmobileapp.presentation.components.CustomUnderlinedTextField
 import com.example.bytebattlesmobileapp.presentation.components.SingleRoundedCornerBox
+import com.example.bytebattlesmobileapp.presentation.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsUserScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     val name = remember { mutableStateOf("") }
     val surname = remember { mutableStateOf("") }
     val passwordOld = remember { mutableStateOf("") }
     val passwordNew = remember { mutableStateOf("") }
     val passwordConfirm = remember { mutableStateOf("") }
+
+    val passwordsMatch = passwordNew == passwordConfirm
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(uiState.passwordChangeSuccess) {
+        if (uiState.passwordChangeSuccess) {
+            // Сброс полей после успешной смены
+            passwordOld.value = ""
+            passwordNew.value = ""
+            passwordConfirm.value = ""
+
+            // Автоматический сброс состояния успеха через 3 секунды
+            scope.launch {
+                kotlinx.coroutines.delay(3000)
+                viewModel.resetPasswordChangeSuccess()
+            }
+        }
+    }
+    val userName = uiState.currentUser ?: ""
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -80,7 +111,7 @@ fun SettingsUserScreen(
                             )
                             Spacer(Modifier.height(15.dp))
                             Text(
-                                "${name.value} ${surname.value}",
+                                userName,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp,
@@ -92,7 +123,36 @@ fun SettingsUserScreen(
                 }
             )
         }
-
+        uiState.errorMessage?.let { error ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFF56565).copy(alpha = 0.1f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.error), // Добавьте свою иконку ошибки
+                        contentDescription = "Ошибка",
+                        tint = Color(0xFFF56565),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = error,
+                        color = Color(0xFFF56565),
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -103,7 +163,8 @@ fun SettingsUserScreen(
                 placeholder = "Старый пароль",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 40.dp)
+                    .padding(horizontal = 40.dp),
+                isPassword = true,
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -114,17 +175,19 @@ fun SettingsUserScreen(
                 placeholder = "Новый пароль",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 40.dp)
+                    .padding(horizontal = 40.dp),
+                isPassword = true,
             )
             Spacer(modifier = Modifier.height(20.dp))
 
             CustomUnderlinedTextField(
                 value = passwordConfirm.value,
                 onValueChange = { passwordConfirm.value = it },
-                placeholder = "Подтверждение паролдя",
+                placeholder = "Подтверждение пароля",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 40.dp)
+                    .padding(horizontal = 40.dp),
+                isPassword = true,
             )
 
 
@@ -132,7 +195,9 @@ fun SettingsUserScreen(
 
             ActionButton(
                 text = "Изменить пароль".uppercase(),
-                onClick = { },
+                onClick = {
+                    viewModel.changePassword(passwordOld.value,passwordNew.value)
+                },
                 color = Color(0xFF5EC2C3),
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
@@ -140,6 +205,10 @@ fun SettingsUserScreen(
             )
         }
     }
+}
+
+private fun AuthViewModel.resetPasswordChangeSuccess() {
+
 }
 
 @Preview

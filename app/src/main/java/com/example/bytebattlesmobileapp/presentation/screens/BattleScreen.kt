@@ -368,7 +368,7 @@ private fun StartBattleButton(
         val buttonColor = when {
             uiState.isLoading -> Color(0xFF757575)
             uiState.roomId.isNotEmpty() -> Color(0xFF4CAF50)
-            uiState.isConnected -> Color(0xFF2196F3)
+            uiState.isConnected ->Color(0xFF5EC2C3)
             else -> Color(0xFF5EC2C3)
         }
 

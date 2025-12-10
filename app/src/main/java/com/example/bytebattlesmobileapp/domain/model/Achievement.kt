@@ -1,9 +1,6 @@
-package com.example.bytebattlesmobileapp.data.network.dto
+package com.example.bytebattlesmobileapp.domain.model
 
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class AchievementDto(
+data class Achievement(
     val id: String,
     val name: String?,
     val description: String?,

@@ -14,6 +14,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bytebattlesmobileapp.R
@@ -35,8 +36,9 @@ fun Header(
         Text(
             textHeader,
             color = Color.White,
+            textAlign = TextAlign.Center,
             fontWeight = FontWeight.Companion.Normal,
-            fontSize = 24.sp,
+            fontSize = 20.sp,
             fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
         )
         Image(painter = painterResource(R.drawable.man), contentDescription = "")

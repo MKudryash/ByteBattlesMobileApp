@@ -13,9 +13,14 @@ sealed class Screen(val route: String, val screenType: ScreenType) {
 
     object Main : Screen("main", ScreenType.WithBottomNav)
     object Task : Screen("task", ScreenType.WithBottomNav)
-    object SideMenu : Screen("side_menu", ScreenType.WithBottomNav)
+    object SideMenu : Screen("side_menu/{name}", ScreenType.WithBottomNav){
+        fun createRoute(name: String): String {
+            return "side_menu/${name}"
+        }
+    }
     object Profile : Screen("profile", ScreenType.WithBottomNav)
     object Statistics : Screen("statistics", ScreenType.WithBottomNav)
+    object Setting : Screen("setting", ScreenType.WithBottomNav)
 
     // Битва - один экран с различными состояниями
     object Battle : Screen("battle?roomId={roomId}",ScreenType.WithoutBottomNav) {

@@ -1,5 +1,6 @@
 package com.example.bytebattlesmobileapp.data.network
 
+import com.example.bytebattlesmobileapp.data.network.dto.ChangePasswordDto
 import com.example.bytebattlesmobileapp.data.network.dto.auth.AuthResponse
 import com.example.bytebattlesmobileapp.data.network.dto.auth.RefreshTokenRequest
 import com.example.bytebattlesmobileapp.data.network.dto.auth.RegisterRequest
@@ -7,6 +8,7 @@ import com.example.bytebattlesmobileapp.data.network.dto.battle.LoginRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
 // Реализации API
@@ -31,5 +33,11 @@ class AuthApiServiceImpl(private val client: HttpClient) : AuthApiService {
 
     override suspend fun logout() {
         client.post("auth/logout")
+    }
+
+    override suspend fun passwordChange(request: ChangePasswordDto) {
+        client.put("auth/passwordChange"){
+            setBody(request)
+        }
     }
 }

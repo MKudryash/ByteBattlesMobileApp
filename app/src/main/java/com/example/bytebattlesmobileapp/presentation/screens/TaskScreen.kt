@@ -65,7 +65,7 @@ fun TaskScreen(
             .fillMaxSize()
             .background(Color(0xFF2C3646))
     ) {
-        UserHeader("Ivan", painter = null, showIcon = true)
+        UserHeader("Ivan", painter = null, showIcon = true,onNavigateSideMenu)
 
         LazyColumn(
             modifier = Modifier

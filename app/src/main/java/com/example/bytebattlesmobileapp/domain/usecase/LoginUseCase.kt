@@ -24,6 +24,12 @@ class RefreshTokenUseCase(private val repository: AuthRepository){
         return repository.refreshToken()
     }
 }
+
+class ChangePasswordUseCase(private val repository: AuthRepository){
+    suspend operator fun invoke(old: String, new: String) {
+        return repository.passwordChange(old,new)
+    }
+}
 // Task Use Cases
 class GetTasksWithPaginationUseCase(private val repository: TaskRepository) {
     suspend operator fun invoke(page:Int=1,pageSize:Int=10,searchTerm:String?,
@@ -85,6 +91,11 @@ class GetLeaderBordUseCase(private val repository: UserRepository) {
 class GetUserActivitiesUseCase(private val repository: UserRepository) {
     suspend operator fun invoke(): List<Activities> {
         return repository.getRecentActivities()
+    }
+}
+class GetUserAchievementsUseCase(private val repository: UserRepository) {
+    suspend operator fun invoke(): List<Achievement> {
+        return repository.getAchievements()
     }
 }
 

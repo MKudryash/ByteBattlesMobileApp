@@ -1,5 +1,6 @@
 package com.example.bytebattlesmobileapp.data.network
 
+import com.example.bytebattlesmobileapp.data.network.dto.ChangePasswordDto
 import com.example.bytebattlesmobileapp.data.network.dto.auth.AuthResponse
 import com.example.bytebattlesmobileapp.data.network.dto.auth.RefreshTokenRequest
 import com.example.bytebattlesmobileapp.data.network.dto.auth.RegisterRequest
@@ -10,4 +11,5 @@ interface AuthApiService {
     suspend fun register(request: RegisterRequest): AuthResponse
     suspend fun refreshToken(request: RefreshTokenRequest): AuthResponse
     suspend fun logout()
+    suspend fun passwordChange(request: ChangePasswordDto)
 }

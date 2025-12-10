@@ -4,9 +4,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bytebattlesmobileapp.R
+import com.example.bytebattlesmobileapp.domain.model.Achievement
 import com.example.bytebattlesmobileapp.domain.model.Activities
 import com.example.bytebattlesmobileapp.domain.model.UserLeader
 import com.example.bytebattlesmobileapp.domain.usecase.GetLeaderBordUseCase
+import com.example.bytebattlesmobileapp.domain.usecase.GetUserAchievementsUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetUserActivitiesUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetUserProfileUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.GetUserStatsUseCase
@@ -23,7 +25,8 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
-    private val getUserActivitiesUseCase: GetUserActivitiesUseCase
+    private val getUserActivitiesUseCase: GetUserActivitiesUseCase,
+    private val getUserAchievementsUseCase: GetUserAchievementsUseCase
 ) : ViewModel() {
     sealed class ProfileUiState {
         data object Loading : ProfileUiState()
@@ -37,11 +40,20 @@ class ProfileViewModel @Inject constructor(
         data class Success(val data: List<Activities>) : ActivitiesUIState()
         data class Error(val message: String) : ActivitiesUIState()
     }
+    sealed class AchievementsUIState {
+        data object Loading : AchievementsUIState()
+        data object Empty : AchievementsUIState()
+        data class Success(val data: List<Achievement>) : AchievementsUIState()
+        data class Error(val message: String) : AchievementsUIState()
+    }
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     private val _uiStateActivities = MutableStateFlow<ActivitiesUIState>(ActivitiesUIState.Loading)
     val uiStateActivities: StateFlow<ActivitiesUIState> = _uiStateActivities.asStateFlow()
+
+    private val _uiStateAchievements = MutableStateFlow<AchievementsUIState>(AchievementsUIState.Loading)
+    val uiStateAchievement: StateFlow<AchievementsUIState> = _uiStateAchievements.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -52,7 +64,9 @@ class ProfileViewModel @Inject constructor(
     init {
         loadProfileData()
         loadActivities()
+        loadAchievements()
     }
+
     fun loadActivities() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -74,6 +88,27 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
+    fun loadAchievements() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _uiStateAchievements.value = AchievementsUIState.Loading
+
+            try {
+                val achievements = getUserAchievementsUseCase()
+
+                if (achievements.isEmpty()) {
+                    _uiStateAchievements.value = AchievementsUIState.Empty
+                } else {
+                    _uiStateAchievements.value = AchievementsUIState.Success(achievements)
+                }
+            } catch (e: Exception) {
+                Log.e("Leader", e.message.toString())
+                _uiStateAchievements.value = AchievementsUIState.Error("Ошибка загрузки активностей: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
     fun loadProfileData() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -82,7 +117,7 @@ class ProfileViewModel @Inject constructor(
             try {
                 val profile = getUserProfileUseCase()
               //  val stats = getUserStatsUseCase(profile.id)
-
+                val achievements = getUserAchievementsUseCase()
                 // Для демонстрации - создаем тестовые данные
                 val scoreHistory = listOf(
                     ScoreHistory(
@@ -108,7 +143,7 @@ class ProfileViewModel @Inject constructor(
                     )
                 )
 
-                val achievements = listOf(
+                /*val achievements = listOf(
                     Achievement(
                         id = "1",
                         title = "Первая кровь",
@@ -173,7 +208,7 @@ class ProfileViewModel @Inject constructor(
                         unlocked = false,
                         unlockDate = null
                     )
-                )
+                )*/
 
                 val profileData = ProfileScreenData(
                     profile = profile,
@@ -242,13 +277,4 @@ data class ScoreHistory(
     val eventName: String,
     val points: Int,
     val isPositive: Boolean
-)
-
-data class Achievement(
-    val id: String,
-    val title: String,
-    val description: String,
-    val iconRes: Int,
-    val unlocked: Boolean,
-    val unlockDate: String?
 )

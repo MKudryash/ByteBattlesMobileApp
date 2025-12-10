@@ -20,7 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.bytebattlesmobileapp.presentation.screens.Achievement
+import com.example.bytebattlesmobileapp.R
+import com.example.bytebattlesmobileapp.domain.model.Achievement
 
 @Composable
 fun AchievementsGrid(
@@ -59,8 +60,8 @@ fun AchievementsGrid(
                 ) {
                     group.forEach { achievement ->
                         CardAchievements(
-                            painter = painterResource(achievement.iconRes),
-                            achievement.title,
+                            painter = painterResource(R.drawable.firstblood),
+                            achievement.name!!,
                             modifier = Modifier.weight(1f)
                         )
                     }

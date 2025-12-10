@@ -1,6 +1,7 @@
 // domain/repository/
 package com.example.bytebattlesmobileapp.domain.repository
 
+import com.example.bytebattlesmobileapp.data.network.dto.ChangePasswordDto
 import com.example.bytebattlesmobileapp.domain.model.*
 
 interface AuthRepository {
@@ -10,4 +11,5 @@ interface AuthRepository {
     suspend fun logout()
     suspend fun isLoggedIn(): Boolean
     fun getCurrentUserId(): String?
+    suspend fun passwordChange(oldPassword: String, newPassword: String)
 }

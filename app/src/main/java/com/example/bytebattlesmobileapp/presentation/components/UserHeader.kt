@@ -1,6 +1,7 @@
 package com.example.bytebattlesmobileapp.presentation.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.example.bytebattlesmobileapp.R
 
@@ -25,7 +27,8 @@ import com.example.bytebattlesmobileapp.R
 fun UserHeader(
     name: String = "Name",
     painter: Painter?,
-    showIcon: Boolean) {
+    showIcon: Boolean,
+    onNavigation:()->Unit) {
 
     Box() {
         CustomVectorShape(
@@ -38,20 +41,27 @@ fun UserHeader(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Image(
+
                         painter = painterResource(R.drawable.menu_burger),
-                        contentDescription = "menu"
+                        contentDescription = "menu",
+                        modifier = Modifier.clickable(onClick = {
+                            onNavigation()
+                        }).weight(0.1f)
                     )
                     Text(
                         "Привет, ${name}!",
                         color = Color.White,
+                        textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Normal,
-                        fontSize = 28.sp,
+                        fontSize = 24.sp,
                         fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
+                        modifier = Modifier.weight(0.8f),
                     )
                     UserAvatar(
                         initials = name,
-                        imagePainter = painter,// или painterResource
-                        showIcon = showIcon
+                        imagePainter = painter,
+                        showIcon = showIcon,
+                        modifier = Modifier.weight(0.15f),
                     )
 
                 }

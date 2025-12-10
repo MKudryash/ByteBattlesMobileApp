@@ -49,7 +49,7 @@ fun AppNavigation(navController: NavHostController) {
         // Основные экраны с панелью навигации
         composable(Screen.Main.route) {
             MainScreen(
-                onNavigateToTask = { navController.navigate(Screen.Task.route) },
+                onNavigateToMenu = { it -> navController.navigate(Screen.SideMenu.createRoute(it)) },
                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
                 onNavigateToBattle = { navController.navigate(Screen.Battle.route) },
                 onNavigateToStatistics = { navController.navigate(Screen.Statistics.route) },
@@ -65,14 +65,31 @@ fun AppNavigation(navController: NavHostController) {
                 onNavigateSideMenu = { navController.navigate(Screen.SideMenu.route) }
             )
         }
-        composable(Screen.SideMenu.route) {
-            SideScreen()
+        composable(
+            Screen.SideMenu.route,
+            arguments = listOf(
+                navArgument("name") { type = NavType.StringType }
+            )) { backStackEntry ->
+            val name = backStackEntry.arguments?.getString("name")
+            SideScreen(
+                name = name,
+                onNavigateToTasks = { navController.navigate(Screen.Task.route) },
+                onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
+                onNavigateToSettings = { navController.navigate(Screen.Setting.route) },
+                onNavigateToLogOut = {}
+            )
         }
 
         composable(Screen.Profile.route) {
             ProfileScreen(
                 onNavigateBack = { navController.navigateUp() }
             )
+        }
+        composable(Screen.Setting.route) {
+            SettingsUserScreen (
+                onNavigateBack = { navController.navigateUp() }
+            )
+
         }
 
         composable(Screen.Statistics.route) {
@@ -97,9 +114,9 @@ fun AppNavigation(navController: NavHostController) {
                 navController = navController,
                 initialRoomId = roomId,
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateToGame = { taskId,roomId ->
+                onNavigateToGame = { taskId, roomId ->
                     // Переходим на экран TrainBattle с taskId
-                    navController.navigate(Screen.TrainBattle.createRoute(taskId,roomId)) {
+                    navController.navigate(Screen.TrainBattle.createRoute(taskId, roomId)) {
                     }
                 }
             )
@@ -159,13 +176,16 @@ fun AppNavigation(navController: NavHostController) {
             TaskInfoScreen(
                 taskId = taskId,
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateTrain = {taskId ->
-                    navController.navigate(Screen.Train.createRoute(taskId))},
+                onNavigateTrain = { taskId ->
+                    navController.navigate(Screen.Train.createRoute(taskId))
+                },
             )
         }
 
-        composable(Screen.Train.route,
-            arguments = listOf(navArgument("taskId") { type = NavType.StringType })) {backStackEntry ->
+        composable(
+            Screen.Train.route,
+            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+        ) { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
             TrainScreen(
                 onNavigateBack = {

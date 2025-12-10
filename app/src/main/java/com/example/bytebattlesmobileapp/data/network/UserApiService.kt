@@ -6,7 +6,6 @@ import com.example.bytebattlesmobileapp.data.network.dto.user.UpdateProfileReque
 import com.example.bytebattlesmobileapp.data.network.dto.user.UserLeaderDto
 import com.example.bytebattlesmobileapp.data.network.dto.user.UserProfileDto
 import com.example.bytebattlesmobileapp.data.network.dto.user.UserStatsDto
-import com.example.bytebattlesmobileapp.presentation.screens.Achievement
 
 interface UserApiService {
     suspend fun getProfile(): UserProfileDto

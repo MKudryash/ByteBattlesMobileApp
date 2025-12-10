@@ -4,6 +4,7 @@ package com.example.bytebattlesmobileapp.data.repository
 import android.util.Log
 import com.example.bytebattlesmobileapp.data.datasource.remote.TokenManager
 import com.example.bytebattlesmobileapp.data.network.*
+import com.example.bytebattlesmobileapp.data.network.dto.ChangePasswordDto
 import com.example.bytebattlesmobileapp.data.network.dto.auth.AuthResponse
 import com.example.bytebattlesmobileapp.data.network.dto.auth.RefreshTokenRequest
 import com.example.bytebattlesmobileapp.data.network.dto.auth.RegisterRequest
@@ -68,6 +69,15 @@ class AuthRepositoryImpl(
 
     override fun getCurrentUserId(): String? {
         return tokenManager.getCurrentUserId()
+    }
+
+    override suspend fun passwordChange(oldPassword: String, newPassword: String) {
+        try{
+            authApi.passwordChange(ChangePasswordDto(oldPassword,newPassword))
+        }
+        catch (ex: Exception){
+
+        }
     }
 
     private fun AuthResponse.toDomain(): User {

@@ -61,6 +61,7 @@ fun StatisticsScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
 
     val activitiesUiState by viewModel.uiStateActivities.collectAsStateWithLifecycle()
+    val achievementUiState by viewModel.uiStateAchievement.collectAsStateWithLifecycle()
 
     var username by remember { mutableStateOf("") }
     var points: Int? by remember { mutableStateOf(0) }
@@ -111,6 +112,7 @@ fun StatisticsScreen(
                 username,
                 painter = painterResource(R.drawable.userprofile),
                 true,
+                onNavigateBack
             )
 
             Spacer(Modifier.height(25.dp))
@@ -310,7 +312,7 @@ fun StatisticsScreen(
             Spacer(Modifier.height(15.dp))
 
             // Сетка достижений - исправленная версия
-            val achievements = listOf(
+            /*val achievements = listOf(
                 Achievement(R.drawable.firstblood, "Первая кровь"),
                 Achievement(R.drawable.firstblood, "Быстрый ученик"),
                 Achievement(R.drawable.firstblood, "Решатель проблем"),
@@ -319,25 +321,96 @@ fun StatisticsScreen(
                 Achievement(R.drawable.firstblood, "Перфекционист"),
                 Achievement(R.drawable.firstblood, "Инноватор"),
                 Achievement(R.drawable.firstblood, "Легенда")
-            )
+            )*/
+            when (achievementUiState) {
+                ProfileViewModel.AchievementsUIState.Empty -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Список наград пуст",
+                            color = Color.Gray,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
 
+                is ProfileViewModel.AchievementsUIState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Ошибка загрузки",
+                                color = Color.Red,
+                                fontSize = 16.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Попробуйте позже",
+                                color = Color.Gray,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+
+                ProfileViewModel.AchievementsUIState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color(0xFF5EC2C3))
+                    }
+                }
+
+                is ProfileViewModel.AchievementsUIState.Success -> {
+                    val achievements =
+                        (achievementUiState as ProfileViewModel.AchievementsUIState.Success).data
+
+                    if (achievements.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Нет данных",
+                                color = Color.Gray,
+                                fontSize = 16.sp
+                            )
+                        }
+                    } else {
+
+                        AchievementsGrid(
+                            achievements = achievements,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 200.dp, max = 400.dp)
+                        )
+
+                        }
+                    }
+                }
+            }
             // Добавляем ограничение по высоте для сетки достижений
-            AchievementsGrid(
-                achievements = achievements,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 200.dp, max = 400.dp)
-            )
+
 
             Spacer(Modifier.height(25.dp))
         }
     }
-}
-
-data class Achievement(
-    val iconRes: Int,
-    val title: String
-)
 
 @Preview
 @Composable

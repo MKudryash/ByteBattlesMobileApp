@@ -31,7 +31,9 @@ import com.example.bytebattlesmobileapp.R
 fun SideMenu(
     icon: Painter,
     nameMenu:String,
-    action:()->Unit
+    action:()->Unit,
+
+
 ) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = {action()}),
