@@ -150,7 +150,7 @@ fun SignUpScreen(
             CustomUnderlinedTextField(
                 value = lastName.value,
                 onValueChange = { lastName.value = it },
-                placeholder = "Имя",
+                placeholder = "Фамилия",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 40.dp)

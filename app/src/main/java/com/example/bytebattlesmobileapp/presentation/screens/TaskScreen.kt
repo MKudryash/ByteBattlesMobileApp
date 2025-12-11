@@ -21,6 +21,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,13 +45,16 @@ import com.example.bytebattlesmobileapp.presentation.components.CardLanguage
 import com.example.bytebattlesmobileapp.presentation.components.CardNewsOrTask
 import com.example.bytebattlesmobileapp.presentation.components.TaskCard
 import com.example.bytebattlesmobileapp.presentation.components.UserHeader
+import com.example.bytebattlesmobileapp.presentation.viewmodel.ProfileViewModel
 import com.example.bytebattlesmobileapp.presentation.viewmodel.TaskViewModel
 
 @Composable
 fun TaskScreen(
     onNavigateToTaskInfo: (String) -> Unit,
     onNavigateSideMenu: () -> Unit,
-    taskViewModel: TaskViewModel = hiltViewModel()
+    taskViewModel: TaskViewModel = hiltViewModel(),
+    profileViewModel: ProfileViewModel = hiltViewModel(),
+    userName: String?
 ) {
     var selectedIndex by remember { mutableIntStateOf(0) }
 
@@ -60,12 +64,22 @@ fun TaskScreen(
     val languages by taskViewModel.languages.collectAsStateWithLifecycle()
     val selectedLanguageId by taskViewModel.selectedLanguageId.collectAsStateWithLifecycle()
 
+    val uiState by profileViewModel.uiState.collectAsStateWithLifecycle()
+
+    var username by remember {  mutableStateOf("")}
+    LaunchedEffect(uiState) {
+        if (uiState is ProfileViewModel.ProfileUiState.Success) {
+            val data = (uiState as ProfileViewModel.ProfileUiState.Success).data
+            username = data.profile.userName
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF2C3646))
     ) {
-        UserHeader("Ivan", painter = null, showIcon = true,onNavigateSideMenu)
+
+        UserHeader(username, painter = null, showIcon = true,onNavigateSideMenu)
 
         LazyColumn(
             modifier = Modifier
@@ -279,5 +293,5 @@ fun getLanguageIcon(languageId: String): Int {
 @Preview
 @Composable
 fun TaskScreenPreview() {
-    TaskScreen({}, {})
+    TaskScreen({}, {}, userName = "")
 }

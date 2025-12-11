@@ -12,7 +12,11 @@ sealed class Screen(val route: String, val screenType: ScreenType) {
     object SignUp : Screen("signup", ScreenType.Auth)
 
     object Main : Screen("main", ScreenType.WithBottomNav)
-    object Task : Screen("task", ScreenType.WithBottomNav)
+    object Task : Screen("task/{userName}", ScreenType.WithBottomNav){
+        fun createRoute(userName: String): String {
+            return "task/${userName}"
+        }
+    }
     object SideMenu : Screen("side_menu/{name}", ScreenType.WithBottomNav){
         fun createRoute(name: String): String {
             return "side_menu/${name}"

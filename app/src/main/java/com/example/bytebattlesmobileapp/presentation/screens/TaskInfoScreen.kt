@@ -125,7 +125,7 @@ fun TaskInfoScreen(
             is TaskViewModel.TaskDetailState.Success -> {
                 Column {
                     val task = (taskState as TaskViewModel.TaskDetailState.Success).task
-                    Header({onNavigateBack},task.title)
+                    Header({onNavigateBack()},task.title)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()

@@ -49,6 +49,7 @@ enum class ModalState {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrainScreen(
+    onNavigateMain:()->Unit,
     onNavigateBack: () -> Unit,
     taskId: String,
     viewModel: TaskViewModel = hiltViewModel()
@@ -325,6 +326,7 @@ fun TrainScreen(
             modalState = modalState,
             onDismiss = { modalState = ModalState.NONE },
             onNavigate = onNavigate,
+            onNavigateMain =onNavigateMain,
             bottomSheetState = bottomSheetState,
             scope = scope,
             onBottomSheetDismiss = { showBottomSheet = false },
@@ -342,6 +344,7 @@ private fun ModalWindowsManager(
     modalState: ModalState,
     onDismiss: () -> Unit,
     onNavigate: (String) -> Unit,
+    onNavigateMain: () -> Unit,
     bottomSheetState: SheetState,
     scope: CoroutineScope,
     onBottomSheetDismiss: () -> Unit,
@@ -355,7 +358,7 @@ private fun ModalWindowsManager(
             CustomInfoDialog(
                 showDialog = true,
                 onDismiss = onDismiss,
-                onNavigateToInfo = { onNavigate("task_details") },
+                onNavigateToInfo = {onNavigateMain() },
                 title = "Закончить?",
                 text = "Завершить выполнение задачи?"
             )
@@ -566,5 +569,5 @@ fun getCodeLang(languageTitle: String): CodeLang {
 @Preview
 @Composable
 fun TrainScreenPreview() {
-    TrainScreen({}, "")
+    TrainScreen({}, {},"")
 }

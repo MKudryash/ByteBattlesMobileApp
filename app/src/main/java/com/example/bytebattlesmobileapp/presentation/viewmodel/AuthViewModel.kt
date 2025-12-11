@@ -70,7 +70,7 @@ class AuthViewModel @Inject constructor(
 
     private val _navigateToLogin = MutableStateFlow(false)
     val navigateToLogin: StateFlow<Boolean> = _navigateToLogin.asStateFlow()
-
+    private var shouldNavigateOnAuthCheck = true
     init {
         // При старте проверяем авторизацию
         checkAuthOnStart()
@@ -82,7 +82,19 @@ class AuthViewModel @Inject constructor(
             checkAuthStatus()
         }
     }
-
+    private fun handleSuccessfulAuth(user: User) {
+        shouldNavigateOnAuthCheck = true
+        _uiState.update {
+            it.copy(
+                authState = AuthState.Success(user),
+                isLoggedIn = true,
+                currentUser = user.username,
+                isLoading = false,
+                errorMessage = null
+            )
+        }
+        _navigateToMain.value = true
+    }
     private suspend fun checkAuthStatus() {
         Log.d("AuthViewModel", "Checking authentication status")
         _uiState.update { it.copy(authState = AuthState.CheckingAuth, isCheckingAuth = true) }
@@ -91,7 +103,7 @@ class AuthViewModel @Inject constructor(
             // ПРОВЕРЯЕМ НЕ ТОЛЬКО НАЛИЧИЕ, НО И ВАЛИДНОСТЬ ТОКЕНА
             val hasToken = authRepository.isLoggedIn()
 
-            if (hasToken) {
+            if (hasToken && shouldNavigateOnAuthCheck) {
                 // Попробуем получить профиль пользователя, чтобы проверить валидность токена
                 try {
                     // Если токен валидный, этот запрос пройдет успешно
@@ -168,17 +180,8 @@ class AuthViewModel @Inject constructor(
 
             try {
                 val user = loginUseCase(email, password)
-                _uiState.update {
-                    it.copy(
-                        authState = AuthState.Success(user),
-                        isLoggedIn = true,
-                        currentUser = user.username,
-                        isLoading = false,
-                        errorMessage = null
-                    )
-                }
+                handleSuccessfulAuth(user)
                 Log.d("AuthViewModel", "Login successful for user: ${user.username}")
-                _navigateToMain.value = true
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Login failed: ${e.message}")
                 _uiState.update {
@@ -192,22 +195,14 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun register(firstName: String, lastName:String, email: String, password: String) {
+
+    fun register(firstName: String, lastName: String, email: String, password: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(authState = AuthState.Loading, isLoading = true) }
 
             try {
-                val user = registerUseCase(firstName,lastName,email,password)
-                _uiState.update {
-                    it.copy(
-                        authState = AuthState.Success(user),
-                        isLoggedIn = true,
-                        currentUser = user.username,
-                        isLoading = false,
-                        errorMessage = null
-                    )
-                }
-                _navigateToMain.value = true
+                val user = registerUseCase(firstName, lastName, email, password)
+                handleSuccessfulAuth(user)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -224,6 +219,9 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             Log.d("AuthViewModel", "Logging out")
             try {
+                // Отключаем автоматическую навигацию
+                shouldNavigateOnAuthCheck = false
+
                 authRepository.logout()
                 _uiState.update {
                     it.copy(
@@ -232,6 +230,10 @@ class AuthViewModel @Inject constructor(
                         currentUser = null
                     )
                 }
+
+                // Явно указываем навигацию на логин
+                _navigateToLogin.value = true
+
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Logout error: ${e.message}")
             }

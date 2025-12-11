@@ -57,12 +57,17 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
-        composable(Screen.Task.route) {
+        composable(Screen.Task.route,
+            arguments = listOf(
+                navArgument("userName") { type = NavType.StringType }
+            )) {backStackEntry ->
+            val name = backStackEntry.arguments?.getString("userName")
             TaskScreen(
                 onNavigateToTaskInfo = { taskId ->
                     navController.navigate(Screen.TaskInfo.createRoute(taskId))
                 },
-                onNavigateSideMenu = { navController.navigate(Screen.SideMenu.route) }
+                onNavigateSideMenu = { navController.navigate(Screen.SideMenu.route) },
+                userName = name
             )
         }
         composable(
@@ -73,10 +78,10 @@ fun AppNavigation(navController: NavHostController) {
             val name = backStackEntry.arguments?.getString("name")
             SideScreen(
                 name = name,
-                onNavigateToTasks = { navController.navigate(Screen.Task.route) },
+                onNavigateToTasks = { it-> navController.navigate(Screen.Task.createRoute(it)) },
                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
                 onNavigateToSettings = { navController.navigate(Screen.Setting.route) },
-                onNavigateToLogOut = {}
+                onNavigateToLogOut = {navController.navigate(Screen.Start.route)}
             )
         }
 
@@ -142,7 +147,12 @@ fun AppNavigation(navController: NavHostController) {
                     }
                 },
                 taskId = taskId,
-                roomId = roomId // Передаем roomId
+                roomId = roomId, // Передаем roomId
+                onNavigateMain = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(0)
+                    }
+                }
             )
         }
 
@@ -163,7 +173,12 @@ fun AppNavigation(navController: NavHostController) {
                     }
                 },
                 taskId = taskId,
-                roomId = roomId
+                roomId = roomId,
+                onNavigateMain = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(0)
+                    }
+                }
             )
         }
 
@@ -194,7 +209,8 @@ fun AppNavigation(navController: NavHostController) {
                         inclusive = false
                     ) ?: navController.navigate(Screen.Main.route)
                 },
-                taskId = taskId
+                taskId = taskId,
+                onNavigateMain = {navController.navigate(Screen.Main.route)}
             )
         }
 

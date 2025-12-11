@@ -38,6 +38,7 @@ import kotlin.collections.emptyList
 @Composable
 fun TrainBattleScreen(
     onNavigateBack: () -> Unit,
+    onNavigateMain:()-> Unit,
     taskId: String,
     viewModel: TaskViewModel = hiltViewModel(),
     battleLobbyViewModel: BattleLobbyViewModel = hiltViewModel(),
@@ -254,6 +255,7 @@ fun TrainBattleScreen(
         // Модальные окна
         ModalWindowsManager(
             modalState = modalState,
+            onNavigateMain =onNavigateMain,
             onDismiss = { modalState = ModalState.NONE },
             onNavigate = onNavigate,
             bottomSheetState = bottomSheetState,
@@ -338,6 +340,7 @@ private fun ModalWindowsManager(
     onDismiss: () -> Unit,
     onNavigate: (String) -> Unit,
     bottomSheetState: SheetState,
+    onNavigateMain:()-> Unit,
     scope: CoroutineScope,
     onBottomSheetDismiss: () -> Unit,
     onSubmitSolution: () -> Unit, // Добавлен параметр
@@ -350,7 +353,7 @@ private fun ModalWindowsManager(
             CustomInfoDialog(
                 showDialog = true,
                 onDismiss = onDismiss,
-                onNavigateToInfo = { onNavigate("task_details") },
+                onNavigateToInfo = { onNavigateMain() },
                 title = "Закончить?",
                 text = "Завершить выполнение задачи?"
             )

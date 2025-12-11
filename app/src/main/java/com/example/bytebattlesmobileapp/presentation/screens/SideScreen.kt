@@ -15,6 +15,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -26,19 +29,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.bytebattlesmobileapp.R
 import com.example.bytebattlesmobileapp.presentation.components.SideMenu
 import com.example.bytebattlesmobileapp.presentation.components.UserAvatar
+import com.example.bytebattlesmobileapp.presentation.viewmodel.AuthViewModel
 import java.nio.file.WatchEvent
 
 @Composable
 fun SideScreen(
     name: String?,
     onNavigateToProfile: () -> Unit,
-    onNavigateToTasks: () -> Unit,
+    onNavigateToTasks: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToLogOut: () -> Unit,
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
+    val navigateToLogin by viewModel.navigateToLogin.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    LaunchedEffect(navigateToLogin) {
+        if (navigateToLogin && !uiState.isLoggedIn) {
+            onNavigateToLogOut()
+            viewModel.loginNavigationHandled()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -56,7 +71,7 @@ fun SideScreen(
         Spacer(Modifier.height(30.dp))
 
         Text(
-            text = "Ivan Ivanovich",
+            text = name?: "",
             color = Color.White,
             fontWeight = FontWeight.Normal,
             fontSize = 24.sp,
@@ -74,7 +89,7 @@ fun SideScreen(
             MenuData(
                 painterResource(R.drawable.menu_tasks),
                 "Задания"
-            ) { onNavigateToTasks() },
+            ) { onNavigateToTasks(name?:"") },
             MenuData(
                 painterResource(R.drawable.menu_favorite),
                 "Избранное"
@@ -110,7 +125,9 @@ fun SideScreen(
         Spacer(Modifier.height(30.dp))
         SideMenu(
             painterResource(R.drawable.mune_exit),
-            "Выход", {onNavigateToLogOut()})
+            "Выход", {
+                viewModel.logout()
+               })
 
     }
 }
