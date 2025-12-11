@@ -70,7 +70,7 @@ fun TaskScreen(
     LaunchedEffect(uiState) {
         if (uiState is ProfileViewModel.ProfileUiState.Success) {
             val data = (uiState as ProfileViewModel.ProfileUiState.Success).data
-            username = data.profile.userName
+            username = data.profile.userName!!
         }
     }
     Column(

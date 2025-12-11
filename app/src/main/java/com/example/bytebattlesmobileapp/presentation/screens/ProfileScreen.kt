@@ -14,9 +14,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -53,188 +56,258 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val updateSuccess by viewModel.updateSuccess.collectAsStateWithLifecycle() // Добавим этот флаг в ViewModel
 
     var username by remember { mutableStateOf("") }
     var linkGithub by remember { mutableStateOf("") }
     var country by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
 
+    // Для отслеживания изначальных значений
+    var originalUsername by remember { mutableStateOf("") }
+    var originalLinkGithub by remember { mutableStateOf("") }
+    var originalCountry by remember { mutableStateOf("") }
+    var originalDescription by remember { mutableStateOf("") }
+
+    // Состояния для уведомлений
+    var showSuccessMessage by remember { mutableStateOf(false) }
+    var showErrorMessage by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
     // Заполняем поля при загрузке данных
     LaunchedEffect(uiState) {
         if (uiState is ProfileViewModel.ProfileUiState.Success) {
             val data = (uiState as ProfileViewModel.ProfileUiState.Success).data
-            username = data.profile.userName
-            linkGithub = data.profile.gitHubUrl?: ""
-            country = data.profile.country?:""
+            username = data.profile.userName!!
+            linkGithub = data.profile.gitHubUrl ?: ""
+            country = data.profile.country ?: ""
             description = data.profile.bio ?: ""
+
+            // Сохраняем оригинальные значения для сравнения
+            originalUsername = data.profile.userName!!
+            originalLinkGithub = data.profile.gitHubUrl ?: ""
+            originalCountry = data.profile.country ?: ""
+            originalDescription = data.profile.bio ?: ""
+        }
+    }
+
+    // Обработка успешного обновления
+    LaunchedEffect(updateSuccess) {
+        if (updateSuccess) {
+            showSuccessMessage = true
+            // Автоматически скрываем через 3 секунды
+            kotlinx.coroutines.delay(3000)
+            showSuccessMessage = false
         }
     }
 
     // Обработка ошибок
-    error?.let { errorMessage ->
-        LaunchedEffect(errorMessage) {
-            // Показать Snackbar или диалог
+    LaunchedEffect(error) {
+        error?.let { errorMsg ->
+            showErrorMessage = true
+            errorMessage = errorMsg
+            // Автоматически скрываем через 5 секунд
+            kotlinx.coroutines.delay(5000)
+            showErrorMessage = false
+            viewModel.clearError()
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF2C3646))
     ) {
-        when (uiState) {
-            is ProfileViewModel.ProfileUiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Color(0xFF5EC2C3))
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            when (uiState) {
+                is ProfileViewModel.ProfileUiState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color(0xFF5EC2C3))
+                    }
                 }
-            }
 
-            is ProfileViewModel.ProfileUiState.Empty -> {
-                EmptyProfileView(onNavigateBack)
-            }
+                is ProfileViewModel.ProfileUiState.Empty -> {
+                    EmptyProfileView(onNavigateBack)
+                }
 
-            is ProfileViewModel.ProfileUiState.Error -> {
-                ErrorProfileView(
-                    message = (uiState as ProfileViewModel.ProfileUiState.Error).message,
-                    onRetry = { viewModel.loadProfileData() },
-                    onNavigateBack = onNavigateBack
-                )
-            }
+                is ProfileViewModel.ProfileUiState.Error -> {
+                    ErrorProfileView(
+                        message = (uiState as ProfileViewModel.ProfileUiState.Error).message,
+                        onRetry = { viewModel.loadProfileData() },
+                        onNavigateBack = onNavigateBack
+                    )
+                }
 
-            is ProfileViewModel.ProfileUiState.Success -> {
-                val data = (uiState as ProfileViewModel.ProfileUiState.Success).data
+                is ProfileViewModel.ProfileUiState.Success -> {
+                    val data = (uiState as ProfileViewModel.ProfileUiState.Success).data
 
-                // Первый элемент Column - Box
-                Box {
-                    val roundedShape = RoundedCornerShape(15.dp)
-                    SingleRoundedCornerBox(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .fillMaxHeight(0.25f),
-                        topStart = 0.dp,
-                        topEnd = 0.dp,
-                        bottomStart = 55.dp,
-                        bottomEnd = 55.dp,
-                        {
-                            Row(
-                                modifier = Modifier.fillMaxSize().padding(top = 30.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                            ) {
-                                Image(
-                                    painter = painterResource(R.drawable.menu_burger),
-                                    contentDescription = "",
-                                    modifier = Modifier.clickable { onNavigateBack() }
-                                )
-
-                                Column(
-                                    verticalArrangement = Arrangement.Center,
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                    // Первый элемент Column - Box
+                    Box {
+                        SingleRoundedCornerBox(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .fillMaxHeight(0.25f),
+                            topStart = 0.dp,
+                            topEnd = 0.dp,
+                            bottomStart = 55.dp,
+                            bottomEnd = 55.dp,
+                            {
+                                Row(
+                                    modifier = Modifier.fillMaxSize().padding(top = 30.dp),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
                                 ) {
                                     Image(
-                                        modifier = Modifier.size(100.dp),
-                                        painter = painterResource(R.drawable.userprofile),
-                                        contentDescription = "user"
+                                        painter = painterResource(R.drawable.menu_burger),
+                                        contentDescription = "",
+                                        modifier = Modifier.clickable { onNavigateBack() }
                                     )
-                                    Spacer(Modifier.height(15.dp))
-                                    Text(
-                                        data.profile.userName,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 24.sp,
-                                        fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
+
+                                    Column(
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Image(
+                                            modifier = Modifier.size(100.dp),
+                                            painter = painterResource(R.drawable.userprofile),
+                                            contentDescription = "user"
+                                        )
+                                        Spacer(Modifier.height(15.dp))
+                                        Text(
+                                            data.profile.userName!!,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 24.sp,
+                                            fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
+                                        )
+                                    }
+                                    Image(
+                                        painter = painterResource(R.drawable.man),
+                                        contentDescription = "",
+                                        modifier = Modifier.clickable {
+                                            // Навигация к статистике или другим экранам
+                                        }
                                     )
                                 }
-                                Image(
-                                    painter = painterResource(R.drawable.man),
-                                    contentDescription = "",
-                                    modifier = Modifier.clickable {
-                                        // Навигация к статистике или другим экранам
-                                    }
-                                )
                             }
-                        }
-                    )
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Spacer(Modifier.height(50.dp))
-                    CustomUnderlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        placeholder = "Имя",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 40.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    CustomUnderlinedTextField(
-                        value = linkGithub,
-                        onValueChange = { linkGithub = it },
-                        placeholder = "Github",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 40.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    CustomUnderlinedTextField(
-                        value = country,
-                        onValueChange = { country = it },
-                        placeholder = "Страна",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 40.dp),
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    CustomUnderlinedTextField(
-                        value = description,
-                        onValueChange = { description = it },
-                        placeholder = "Описание",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 40.dp),
-                    )
-
-                    Spacer(modifier = Modifier.height(40.dp))
-
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(48.dp),
-                            color = Color(0xFF5EC2C3)
                         )
-                    } else {
-                        ActionButton(
-                            text = "Сохранить".uppercase(),
-                            onClick = {
-                                viewModel.updateProfile(
-                                    userName = if (username != data.profile.userName) username else null,
-                                    link = if (linkGithub != data.profile.gitHubUrl) linkGithub else null,
-                                    country = if (country != data.profile.country) country else null,
-                                    bio = if (description != data.profile.bio) description else null
-                                )
-                            },
-                            color = Color(0xFF5EC2C3),
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(Modifier.height(50.dp))
+
+                        CustomUnderlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            placeholder = "Имя",
                             modifier = Modifier
-                                .fillMaxWidth(0.8f)
-                                .height(60.dp)
+                                .fillMaxWidth()
+                                .padding(horizontal = 40.dp)
                         )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        CustomUnderlinedTextField(
+                            value = linkGithub,
+                            onValueChange = { linkGithub = it },
+                            placeholder = "Github",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 40.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        CustomUnderlinedTextField(
+                            value = country,
+                            onValueChange = { country = it },
+                            placeholder = "Страна",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 40.dp),
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        CustomUnderlinedTextField(
+                            value = description,
+                            onValueChange = { description = it },
+                            placeholder = "Описание",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 40.dp),
+                        )
+
+                        Spacer(modifier = Modifier.height(40.dp))
+
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp),
+                                color = Color(0xFF5EC2C3)
+                            )
+                        } else {
+                            // Проверяем, изменились ли данные
+                            val hasChanges = username != originalUsername ||
+                                    linkGithub != originalLinkGithub ||
+                                    country != originalCountry ||
+                                    description != originalDescription
+
+                            ActionButton(
+                                text = if (hasChanges) "Сохранить изменения" else "Нет изменений",
+                                onClick = {
+                                    if (hasChanges) {
+                                        viewModel.updateProfile(
+                                            userName = if (username != originalUsername) username else null,
+                                            link = if (linkGithub != originalLinkGithub) linkGithub else null,
+                                            country = if (country != originalCountry) country else null,
+                                            bio = if (description != originalDescription) description else null
+                                        )
+                                    }
+                                },
+                                color = if (hasChanges) Color(0xFF5EC2C3) else Color.Gray,
+                                modifier = Modifier
+                                    .fillMaxWidth(0.8f)
+                                    .height(60.dp),
+                                enabled = hasChanges && !isLoading
+                            )
+                        }
                     }
                 }
             }
         }
+
+        // Уведомление об успешном сохранении
+        if (showSuccessMessage) {
+            SuccessNotification(
+                message = "Профиль успешно обновлен",
+                onDismiss = { showSuccessMessage = false },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 100.dp)
+            )
+        }
+
+        // Уведомление об ошибке
+        if (showErrorMessage) {
+            ErrorNotification(
+                message = errorMessage,
+                onDismiss = {
+                    showErrorMessage = false
+                    viewModel.clearError()
+                },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 100.dp)
+            )
+        }
     }
 }
-
 @Composable
 fun EmptyProfileView(onNavigateBack: () -> Unit) {
     Column(
@@ -333,7 +406,107 @@ fun ErrorProfileView(
         }
     }
 }
+@Composable
+fun SuccessNotification(
+    message: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LaunchedEffect(Unit) {
+        // Автоматически скрываем через 3 секунды
+        kotlinx.coroutines.delay(3000)
+        onDismiss()
+    }
 
+    Card(
+        modifier = modifier
+            .fillMaxWidth(0.9f),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF4CAF50).copy(alpha = 0.95f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.check), // Используем вашу иконку
+                contentDescription = "Успех",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = message,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                painter = painterResource(R.drawable.close), // Иконка закрытия
+                contentDescription = "Закрыть",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(20.dp)
+                    .clickable { onDismiss() }
+            )
+        }
+    }
+}
+
+@Composable
+fun ErrorNotification(
+    message: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth(0.9f),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF44336).copy(alpha = 0.95f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.error), // Используем вашу иконку
+                contentDescription = "Ошибка",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = message,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                painter = painterResource(R.drawable.close), // Иконка закрытия
+                contentDescription = "Закрыть",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(20.dp)
+                    .clickable { onDismiss() }
+            )
+        }
+    }
+}
 @Preview
 @Composable
 fun ProfileScreenPreview() {

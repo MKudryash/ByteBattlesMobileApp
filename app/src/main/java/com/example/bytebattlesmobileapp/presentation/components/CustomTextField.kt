@@ -87,11 +87,20 @@ fun CustomUnderlinedTextField(
     modifier: Modifier = Modifier,
     isPassword: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    errorMessage: String? = null
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxWidth()) {
+        errorMessage?.let {
+            Text(
+                text = it,
+                color = Color(0xFFF44336),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+            )
+        }
         BasicTextField(
             value = value,
             onValueChange = onValueChange,

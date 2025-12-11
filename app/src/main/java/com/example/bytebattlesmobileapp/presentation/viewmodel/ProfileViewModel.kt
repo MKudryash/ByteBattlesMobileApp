@@ -15,6 +15,7 @@ import com.example.bytebattlesmobileapp.domain.usecase.GetUserStatsUseCase
 import com.example.bytebattlesmobileapp.domain.usecase.UpdateProfileUseCase
 import com.example.bytebattlesmobileapp.presentation.viewmodel.LeaderboardViewModel.LeaderboardUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,6 +55,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _uiStateAchievements = MutableStateFlow<AchievementsUIState>(AchievementsUIState.Loading)
     val uiStateAchievement: StateFlow<AchievementsUIState> = _uiStateAchievements.asStateFlow()
+
+    private val _updateSuccess = MutableStateFlow(false)
+    val updateSuccess: StateFlow<Boolean> = _updateSuccess.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -237,25 +241,26 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
+            _updateSuccess.value = false
+
             try {
+                val updatedProfile = updateProfileUseCase(userName, country, link, bio)
 
+                // Обновляем данные профиля
+                loadProfileData()
 
-                val updatedProfile = updateProfileUseCase(userName, country,link,bio)
+                // Устанавливаем флаг успешного обновления
+                _updateSuccess.value = true
 
-                /*// Обновляем состояние с новыми данными
-                _uiState.update { currentState ->
-                    when (currentState) {
-                        is ProfileUiState.Success -> {
-                            val updatedData = currentState.data.copy(
-                                profile = updatedProfile
-                            )
-                            ProfileUiState.Success(updatedData)
-                        }
-                        else -> currentState
-                    }
-                }*/
+                // Сбрасываем флаг через некоторое время
+                launch {
+                    delay(5000)
+                    _updateSuccess.value = false
+                }
+
             } catch (e: Exception) {
                 _error.value = "Ошибка обновления профиля: ${e.message}"
+                Log.e("ProfileViewModel", "Update error: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }

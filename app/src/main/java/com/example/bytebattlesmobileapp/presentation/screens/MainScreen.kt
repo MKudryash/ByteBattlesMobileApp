@@ -68,7 +68,7 @@ fun MainScreen(
             is ProfileViewModel.ProfileUiState.Success -> {
                 val data = (uiState as ProfileViewModel.ProfileUiState.Success).data
                 UserHeader(
-                    name = data.profile.userName,
+                    name = data.profile.userName!!,
                     painter = painterResource(R.drawable.userprofile),
                     showIcon = true,
                     {onNavigateToMenu(data.profile.userName)}

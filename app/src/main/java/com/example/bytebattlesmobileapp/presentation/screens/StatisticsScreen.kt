@@ -76,7 +76,7 @@ fun StatisticsScreen(
         if (uiState is ProfileViewModel.ProfileUiState.Success) {
             val data = (uiState as ProfileViewModel.ProfileUiState.Success).data
             Log.d("USER", data.stats.toString())
-            username = data.profile.userName
+            username = data.profile.userName!!
             points = data.stats?.totalExperience
             wins = data.stats?.wins
             loses = data.stats?.losses

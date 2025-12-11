@@ -43,6 +43,7 @@ import com.example.bytebattlesmobileapp.R
 import com.example.bytebattlesmobileapp.presentation.components.ActionButton
 import com.example.bytebattlesmobileapp.presentation.components.CustomUnderlinedTextField
 import com.example.bytebattlesmobileapp.presentation.components.SingleRoundedCornerBox
+import com.example.bytebattlesmobileapp.presentation.components.ValidationErrorMessage
 import com.example.bytebattlesmobileapp.presentation.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
@@ -57,8 +58,20 @@ fun SettingsUserScreen(
     val passwordNew = remember { mutableStateOf("") }
     val passwordConfirm = remember { mutableStateOf("") }
 
+    // Состояния для ошибок валидации
+    val passwordMismatchError = remember { mutableStateOf<String?>(null) }
+    val samePasswordError = remember { mutableStateOf<String?>(null) }
+    val shortPasswordError = remember { mutableStateOf<String?>(null) }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+
+    // Функция для сброса всех ошибок
+    fun clearAllErrors() {
+        passwordMismatchError.value = null
+        samePasswordError.value = null
+        shortPasswordError.value = null
+    }
 
     // Отслеживаем успешную смену пароля
     LaunchedEffect(uiState.passwordChangeSuccess) {
@@ -67,10 +80,11 @@ fun SettingsUserScreen(
             passwordOld.value = ""
             passwordNew.value = ""
             passwordConfirm.value = ""
+            clearAllErrors()
         }
     }
 
-    // Отслеживаем состояние ошибки
+    // Отслеживаем состояние ошибки из ViewModel
     LaunchedEffect(uiState.errorMessage) {
         if (uiState.errorMessage != null) {
             // Автоматически скрываем ошибку через 5 секунд
@@ -82,12 +96,49 @@ fun SettingsUserScreen(
     }
 
     val userName = uiState.currentUser ?: ""
+
+    // Функция для валидации паролей
+    fun validatePasswords(): Boolean {
+        clearAllErrors()
+
+        // Проверка на пустые поля
+        if (passwordOld.value.isEmpty() || passwordNew.value.isEmpty() || passwordConfirm.value.isEmpty()) {
+            return false // Разрешаем отправку, но валидация будет на сервере
+        }
+
+        // Проверка на совпадение нового и подтвержденного пароля
+        if (passwordNew.value != passwordConfirm.value) {
+            passwordMismatchError.value = "Новый пароль и подтверждение не совпадают"
+            return false
+        }
+
+        // Проверка на длину нового пароля
+        if (passwordNew.value.length < 6) {
+            shortPasswordError.value = "Пароль должен содержать минимум 6 символов"
+            return false
+        }
+
+        // Проверка, что старый и новый пароли разные
+        if (passwordOld.value == passwordNew.value) {
+            samePasswordError.value = "Новый пароль должен отличаться от старого"
+            return false
+        }
+
+        return true
+    }
+
+    // Функция для обработки нажатия кнопки
+    fun onChangePasswordClick() {
+        if (validatePasswords()) {
+            viewModel.changePassword(passwordOld.value, passwordNew.value)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF2C3646))
     ) {
-        // Первый элемент Column - Box
         Box {
             val roundedShape = RoundedCornerShape(15.dp)
             SingleRoundedCornerBox(
@@ -148,6 +199,29 @@ fun SettingsUserScreen(
                 )
             }
 
+            // Показываем ошибки валидации
+            passwordMismatchError.value?.let { error ->
+                ValidationErrorMessage(
+                    message = error,
+                    onDismiss = { passwordMismatchError.value = null }
+                )
+            }
+
+            samePasswordError.value?.let { error ->
+                ValidationErrorMessage(
+                    message = error,
+                    onDismiss = { samePasswordError.value = null }
+                )
+            }
+
+            shortPasswordError.value?.let { error ->
+                ValidationErrorMessage(
+                    message = error,
+                    onDismiss = { shortPasswordError.value = null }
+                )
+            }
+
+            // Ошибка из ViewModel
             uiState.errorMessage?.let { error ->
                 ErrorMessage(
                     message = error,
@@ -160,9 +234,13 @@ fun SettingsUserScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(50.dp))
+
             CustomUnderlinedTextField(
                 value = passwordOld.value,
-                onValueChange = { passwordOld.value = it },
+                onValueChange = {
+                    passwordOld.value = it
+                    clearAllErrors() // Сбрасываем ошибки при вводе
+                },
                 placeholder = "Старый пароль",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -174,7 +252,10 @@ fun SettingsUserScreen(
 
             CustomUnderlinedTextField(
                 value = passwordNew.value,
-                onValueChange = { passwordNew.value = it },
+                onValueChange = {
+                    passwordNew.value = it
+                    clearAllErrors() // Сбрасываем ошибки при вводе
+                },
                 placeholder = "Новый пароль",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -186,7 +267,10 @@ fun SettingsUserScreen(
 
             CustomUnderlinedTextField(
                 value = passwordConfirm.value,
-                onValueChange = { passwordConfirm.value = it },
+                onValueChange = {
+                    passwordConfirm.value = it
+                    clearAllErrors() // Сбрасываем ошибки при вводе
+                },
                 placeholder = "Подтверждение пароля",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -198,16 +282,15 @@ fun SettingsUserScreen(
 
             ActionButton(
                 text = "Изменить пароль".uppercase(),
-                onClick = {
-                    if (validatePasswords(passwordOld.value, passwordNew.value, passwordConfirm.value)) {
-                        viewModel.changePassword(passwordOld.value, passwordNew.value)
-                    }
-                },
+                onClick = ::onChangePasswordClick, // Используем функцию валидации
                 color = Color(0xFF5EC2C3),
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .height(60.dp),
-                enabled = !uiState.isLoading && !uiState.isChangingPassword
+                enabled = !uiState.isLoading && !uiState.isChangingPassword &&
+                        passwordOld.value.isNotEmpty() &&
+                        passwordNew.value.isNotEmpty() &&
+                        passwordConfirm.value.isNotEmpty()
             )
 
             // Индикатор загрузки

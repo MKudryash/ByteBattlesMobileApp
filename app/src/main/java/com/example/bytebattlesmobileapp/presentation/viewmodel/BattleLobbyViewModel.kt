@@ -81,7 +81,9 @@ class BattleLobbyViewModel @Inject constructor(
                 }
         }
     }
-
+    fun updateCountdown(newCountdown: Int) {
+        _uiState.update { it.copy(countdown = newCountdown) }
+    }
     private fun handleIncomingMessage(message: IncomingBattleMessage) {
         println("BattleLobbyViewModel: Handling message: $message")
 
@@ -434,16 +436,23 @@ class BattleLobbyViewModel @Inject constructor(
                     )
                 }
             }
-            // ВАЖНО: Добавляем обработку ReadinessTimeout
             is IncomingBattleMessage.ReadinessTimeout -> {
                 println("BattleLobbyViewModel: ReadinessTimeout received - message=${message.message}, readyCount=${message.readyCount}")
+
+                // Закрываем комнату при таймауте
+                viewModelScope.launch {
+                    leaveRoom()
+                }
+
+                // Показываем сообщение о закрытии
                 _uiState.update {
                     it.copy(
-                        battleState = BattleRoomState.WaitingForPlayers,
+                        battleState = BattleRoomState.Error("Время ожидания истекло. Комната закрыта."),
                         countdown = 0,
                         readyCount = message.readyCount
                     )
                 }
+
                 // Сбрасываем состояние готовности всех участников
                 _uiState.update { currentState ->
                     currentState.copy(
@@ -509,12 +518,18 @@ class BattleLobbyViewModel @Inject constructor(
 
             // Если таймер истек и мы все еще в состоянии ReadyCheck
             if (_uiState.value.battleState is BattleRoomState.ReadyCheck && currentCountdown == 0) {
+                println("BattleLobbyViewModel: Timeout! Closing room...")
+
+                // Обновляем состояние
                 _uiState.update {
                     it.copy(
                         battleState = BattleRoomState.WaitingForPlayers,
                         countdown = 0
                     )
                 }
+
+                // Закрываем комнату
+                leaveRoom()
             }
         }
     }
@@ -741,17 +756,24 @@ class BattleLobbyViewModel @Inject constructor(
             }
         }
 
-        fun leaveRoom() {
-            val roomId = _uiState.value.roomId
+    fun leaveRoom() {
+        val roomId = _uiState.value.roomId
 
-            if (roomId.isNotEmpty()) {
-                viewModelScope.launch {
-                    leaveRoomUseCase(roomId)
-                    // Сбрасываем состояние после выхода
-                    _uiState.update { BattleLobbyUiState() }
+        if (roomId.isNotEmpty()) {
+            viewModelScope.launch {
+                // Отправляем команду на сервер о выходе
+                leaveRoomUseCase(roomId)
+
+                // Сбрасываем состояние после выхода
+                _uiState.update {
+                    BattleLobbyUiState(
+                        playerId = it.playerId, // Сохраняем playerId
+                        isConnected = it.isConnected // Сохраняем состояние подключения
+                    )
                 }
             }
         }
+    }
 
         fun startReadyCheck() {
             // В реальном приложении это будет сообщение на сервер
@@ -788,7 +810,7 @@ class BattleLobbyViewModel @Inject constructor(
         val readyCount: Int = 0,
         val isCurrentPlayerReady: Boolean = false,
         val battleState: BattleRoomState = BattleRoomState.NotConnected, // Изменили начальное состояние
-        val countdown: Int = 30,
+        val countdown: Int = 60,
         val gameDuration: Int = 0,
         val taskId: String? = null,
     )

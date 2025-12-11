@@ -63,21 +63,22 @@ data class UserStatsDto(
 )
 @Serializable
 data class UserProfileDto(
-    val id: String,
-    val userId: String,
-    val userName: String,
-    val avatarUrl: String?,
-    val bio: String?,
-    val gitHubUrl: String?,
-    val linkedInUrl: String?,
-    val level: String?,
-    val stats: UserStatsDto?,
-    val settings: UserSettingsDto,
-    val createdAt: String,
-    val isPublic: Boolean,
-    val email:String,
-    val country: String?,
+    val id: String? = null,
+    val userId: String? = null,
+    val userName: String? = null,
+    val avatarUrl: String? = null,
+    val bio: String? = null,
+    val gitHubUrl: String? = null,
+    val linkedInUrl: String? = null,
+    val level: String? = null,
+    val stats: UserStatsDto? = null,
+    val settings: UserSettingsDto? = null,
+    val createdAt: String? = null,
+    val isPublic: Boolean? = null,
+    val email: String? = null,
+    val country: String? = null,
 )
+
 @Serializable
 data class UserLeaderDto(
     val userId: String,
@@ -93,10 +94,10 @@ data class UserLeaderDto(
 
 @Serializable
 data class UserSettingsDto(
-    val emailNotifications: Boolean,
-    val battleInvitations: Boolean,
-    val achievementNotifications: Boolean,
-    val theme: String,
-    val codeEditorTheme: String,
-    val preferredLanguage: String
+    val emailNotifications: Boolean?,
+    val battleInvitations: Boolean?,
+    val achievementNotifications: Boolean?,
+    val theme: String?,
+    val codeEditorTheme: String?,
+    val preferredLanguage: String??
 )

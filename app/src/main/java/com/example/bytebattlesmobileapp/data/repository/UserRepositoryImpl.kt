@@ -85,7 +85,7 @@ class UserRepositoryImpl(
             userName = userName,
             avatarUrl = avatarUrl,
             bio, gitHubUrl, linkedInUrl, level,
-            settings.toDomain(), stats?.toDomain(), createdAt, isPublic, email = email, country
+            settings?.toDomain(), stats?.toDomain(), createdAt, isPublic, email = email, country
         )
     }
 

@@ -70,6 +70,15 @@ fun TrainScreen(
     var description by remember { mutableStateOf("") }
     var testCases:List<TestCase> by remember { mutableStateOf(emptyList()) }
 
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var taskTitleForDialog by remember { mutableStateOf("") }
+    var passedTestsForDialog by remember { mutableStateOf(0) }
+    var totalTestsForDialog by remember { mutableStateOf(0) }
+    var executionTimeForDialog by remember { mutableStateOf<String?>(null) }
+
+    var successMessage by remember { mutableStateOf("") }
+    var taskTitle by remember { mutableStateOf("") }
+
 
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
 
@@ -140,6 +149,23 @@ fun TrainScreen(
                 Log.d("Submit Success", state.solution.successRate.toString())
                 delay(2000)
                 viewModel.clearSubmitState()
+                val isFullySolved = state.solution.passedTests == state.solution.totalTests
+
+                if (isFullySolved) {
+                    // Устанавливаем флаг для показа диалога успеха
+                    taskTitle = nameTask
+                    successMessage = "Задача успешно решена! Пройдено тестов: ${state.solution.passedTests}/${state.solution.totalTests}"
+                    showSuccessDialog = true
+                    passedTestsForDialog = state.solution.passedTests!!
+                    totalTestsForDialog = state.solution.totalTests!!
+
+                    // Ждем 3 секунды перед закрытием экрана
+                    delay(3000)
+                    showSuccessDialog = false
+                    onNavigateBack()
+                }
+                delay(2000)
+                viewModel.clearSubmitState()
             }
 
             is TaskViewModel.SubmitSolutionState.Error -> {
@@ -153,7 +179,19 @@ fun TrainScreen(
             }
         }
     }
-
+    if (showSuccessDialog) {
+        SuccessTaskDialog(
+            taskTitle = taskTitleForDialog,
+            passedTests = passedTestsForDialog,
+            totalTests = totalTestsForDialog,
+            executionTime = executionTimeForDialog,
+            onDismiss = {
+                showSuccessDialog = false
+                onNavigateBack()
+            },
+            showDialog = showSuccessDialog
+        )
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -336,7 +374,7 @@ fun TrainScreen(
             bottomSheetState = bottomSheetState,
             scope = scope,
             onBottomSheetDismiss = { showBottomSheet = false },
-            onSubmitSolution = { onSubmitSolution() },
+            onSubmitSolution = { onSubmitSolution ()},
             testCases,
             description
         )

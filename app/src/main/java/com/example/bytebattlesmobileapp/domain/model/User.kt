@@ -6,12 +6,12 @@ import kotlinx.serialization.Serializable
 
 data class User(
     val id: String,
-    val username: String,
-    val email: String,
-    val rating: Int,
-    val battlesWon: Int,
-    val battlesLost: Int,
-    val tasksSolved: Int
+    val username: String?,
+    val email: String?,
+    val rating: Int?,
+    val battlesWon: Int?,
+    val battlesLost: Int?,
+    val tasksSolved: Int?
 )
 
 data class TaskExample(
@@ -20,19 +20,19 @@ data class TaskExample(
     val explanation: String?
 )
 data class UserProfile(
-    val id: String,
-    val userId: String,
-    val userName: String,
+    val id: String?,
+    val userId: String?,
+    val userName: String?,
     val avatarUrl: String?,
     val bio: String?,
     val gitHubUrl: String?,
     val linkedInUrl: String?,
     val level: String?,
-    val settings: UserSettings,
+    val settings: UserSettings?,
     val stats: UserStats?,
-    val createdAt: String,
-    val isPublic: Boolean,
-    val email: String,
+    val createdAt: String?,
+    val isPublic: Boolean?,
+    val email: String?,
     val country: String?,
 
 )
@@ -73,10 +73,10 @@ data class UserLeader(
 )
 
 data class UserSettings(
-    val emailNotifications: Boolean,
-    val battleInvitations: Boolean,
-    val achievementNotifications: Boolean,
-    val theme: String,
-    val codeEditorTheme: String,
-    val preferredLanguage: String
+    val emailNotifications: Boolean?,
+    val battleInvitations: Boolean?,
+    val achievementNotifications: Boolean?,
+    val theme: String?,
+    val codeEditorTheme: String?,
+    val preferredLanguage: String?
 )

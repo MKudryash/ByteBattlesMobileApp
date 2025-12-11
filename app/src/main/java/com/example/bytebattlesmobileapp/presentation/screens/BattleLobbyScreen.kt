@@ -831,7 +831,7 @@ fun BattleLobbyScreenPreview() {
 
                 RoomStatusSection(
                     battleState = BattleRoomState.WaitingForPlayers,
-                    countdown = 30,
+                    countdown = 60,
                     participantsCount = 1,
                     readyCount = 0
                 )
@@ -1066,7 +1066,7 @@ fun ReadyCheckActions(
         // Таймер
         Text(
             text = "00:${countdown.toString().padStart(2, '0')}",
-            color = if (countdown > 10) Color.White else Color(0xFFF44336),
+            color = if (countdown > 60) Color.White else Color(0xFFF44336),
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold))
