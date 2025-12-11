@@ -49,6 +49,7 @@ import com.example.bytebattlesmobileapp.presentation.components.UserHeader
 import com.example.bytebattlesmobileapp.presentation.components.UserTopCard
 import com.example.bytebattlesmobileapp.presentation.viewmodel.LeaderboardViewModel
 import com.example.bytebattlesmobileapp.presentation.viewmodel.ProfileViewModel
+import kotlin.math.round
 
 
 @Composable
@@ -142,7 +143,7 @@ fun StatisticsScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                CardProfileStatistic("✅ Победы", "$wins (${winRate}%)")
+                CardProfileStatistic("✅ Победы", "$wins (${"%.2f".format(winRate) }%)")
                 CardProfileStatistic("⛔Поражения", "${loses}")
                 CardProfileStatistic("\uD83C\uDFF9 Лучшая серия", "${maxStreak} побед")
             }

@@ -29,6 +29,8 @@ import com.example.bytebattlesmobileapp.presentation.components.CardTest
 import com.example.bytebattlesmobileapp.presentation.components.CircleButton
 import com.example.bytebattlesmobileapp.presentation.components.CustomInfoDialog
 import com.example.bytebattlesmobileapp.presentation.components.Header
+import com.example.bytebattlesmobileapp.presentation.viewmodel.Notification
+import com.example.bytebattlesmobileapp.presentation.viewmodel.NotificationType
 import com.example.bytebattlesmobileapp.presentation.viewmodel.TaskViewModel
 import com.wakaztahir.codeeditor.highlight.model.CodeLang
 import kotlinx.coroutines.CoroutineScope
@@ -67,6 +69,9 @@ fun TrainScreen(
     var isCodeInitialized by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
     var testCases:List<TestCase> by remember { mutableStateOf(emptyList()) }
+
+
+    val notifications by viewModel.notifications.collectAsStateWithLifecycle()
 
     // Загружаем задачу только один раз при инициализации
     LaunchedEffect(Unit) {
@@ -139,9 +144,6 @@ fun TrainScreen(
 
             is TaskViewModel.SubmitSolutionState.Error -> {
                 Log.e("TrainScreen", "Submit error: ${state.error}")
-                // Можно показать уведомление об ошибке
-
-                // Через некоторое время сбрасываем состояние
                 delay(3000)
                 viewModel.clearSubmitState()
             }
@@ -312,7 +314,6 @@ fun TrainScreen(
                         onInfoClick = { modalState = ModalState.TESTS_BOTTOM_SHEET },
                         onSubmitClick = {
                             modalState = ModalState.SUBMIT_CODE
-                            viewModel.submitSolution(currentCode!!, languageId, taskId)
                         }
                     )
                 }
@@ -320,7 +321,12 @@ fun TrainScreen(
 
             else -> {}
         }
-
+        NotificationOverlay(
+            notifications = notifications,
+            onDismissNotification = { id ->
+                viewModel.dismissNotification(id)
+            }
+        )
         // Управление всеми модальными окнами
         ModalWindowsManager(
             modalState = modalState,
@@ -330,13 +336,124 @@ fun TrainScreen(
             bottomSheetState = bottomSheetState,
             scope = scope,
             onBottomSheetDismiss = { showBottomSheet = false },
-            onSubmitSolution = { onSubmitSolution },
+            onSubmitSolution = { onSubmitSolution() },
             testCases,
             description
         )
     }
 }
+@Composable
+fun NotificationOverlay(
+    notifications: List<Notification>,
+    onDismissNotification: (Long) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 70.dp), // Отступ от хедера
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            notifications.forEach { notification ->
+                NotificationItem(
+                    notification = notification,
+                    onDismiss = { onDismissNotification(notification.id) }
+                )
+            }
+        }
+    }
+}
 
+@Composable
+fun NotificationItem(
+    notification: Notification,
+    onDismiss: () -> Unit
+) {
+    val backgroundColor = when (notification.type) {
+        NotificationType.SUCCESS -> Color(0xFF4CAF50)
+        NotificationType.ERROR -> Color(0xFFF44336)
+        NotificationType.WARNING -> Color(0xFFFF9800)
+        NotificationType.INFO -> Color(0xFF2196F3)
+    }
+
+    // Автоматическое скрытие через 5 секунд
+    LaunchedEffect(notification.id) {
+        kotlinx.coroutines.delay(5000)
+        onDismiss()
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor.copy(alpha = 0.9f)
+        ),
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Иконка
+            Icon(
+                painter = painterResource(
+                    when (notification.type) {
+                        NotificationType.SUCCESS -> R.drawable.check
+                        NotificationType.ERROR -> R.drawable.error_ic
+                        NotificationType.WARNING -> R.drawable.error
+                        NotificationType.INFO -> R.drawable.inform
+                    }
+                ),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Текст
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = notification.title,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = notification.message,
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 14.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Кнопка закрытия
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.close),
+                    contentDescription = "Закрыть",
+                    tint = Color.White
+                )
+            }
+        }
+    }
+}
 // Обновите ModalWindowsManager, чтобы принимать onSubmitSolution
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
