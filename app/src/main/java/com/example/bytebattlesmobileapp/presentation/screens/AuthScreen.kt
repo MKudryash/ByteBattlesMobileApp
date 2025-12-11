@@ -317,9 +317,9 @@ fun parseAuthError(errorMessage: String): ParsedAuthError {
                 message = "Сервер не отвечает. Попробуйте позже."
             )
 
-        else -> ParsedAuthError(
-            title = "Ошибка",
-            message = errorMessage
+        else ->  ParsedAuthError(
+            title = "Ошибка авторизации",
+            message = "Неверный email или пароль. Проверьте правильность введенных данных. Или аккаунта не существует"
         )
     }
 }

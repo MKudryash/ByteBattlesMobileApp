@@ -35,7 +35,6 @@ fun BattleContainerScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val taskId by viewModel.taskId.collectAsStateWithLifecycle()
-
     var isCreatingRoom by remember { mutableStateOf<Boolean?>(null) }
 
     // Отслеживаем, когда комната создана и мы должны перейти в лобби

@@ -8,6 +8,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +32,7 @@ import com.example.bytebattlesmobileapp.R
 import com.example.bytebattlesmobileapp.presentation.components.ActionButton
 import com.example.bytebattlesmobileapp.presentation.components.SingleRoundedCornerBox
 import com.example.bytebattlesmobileapp.presentation.viewmodel.AuthViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun StartScreen(
@@ -39,48 +44,65 @@ fun StartScreen(
     val uiState = authViewModel.uiState.collectAsState()
     val navigateToMain = authViewModel.navigateToMain.collectAsState()
 
+    // Используем локальное состояние для контроля отображения
+    var showMainContent by remember { mutableStateOf(false) }
+    var isInitialLoad by remember { mutableStateOf(true) }
+
     // Отслеживаем состояние загрузки и навигации
     LaunchedEffect(uiState.value.isCheckingAuth, navigateToMain.value) {
         // Если проверка завершена И есть токен, переходим на main
         if (!uiState.value.isCheckingAuth && uiState.value.isLoggedIn) {
             onNavigateToMain()
             authViewModel.navigationHandled()
+            return@LaunchedEffect
         }
 
         // Если navigateToMain стало true, также переходим
         if (navigateToMain.value) {
             onNavigateToMain()
             authViewModel.navigationHandled()
+            return@LaunchedEffect
+        }
+
+        // Показываем основной контент только после завершения проверки
+        if (!uiState.value.isCheckingAuth) {
+            // Добавляем небольшую задержку для плавного перехода
+            delay(100) // Можно уменьшить до 50мс или убрать если не нужно
+            showMainContent = true
         }
     }
 
-    // Показываем индикатор загрузки во время проверки
-    if (uiState.value.isCheckingAuth) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF1A1A2E)),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = Color.White)
-        }
-    } else {
-        // Показываем основной контент, если проверка завершена
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF1A1A2E))
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF2C3646)),
+    ) {
+        // ВАЖНО: Сначала рисуем фон
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            alpha = if (showMainContent) 1f else 0f // Плавное появление
+        )
 
+        // Показываем индикатор загрузки во время проверки
+        if (!showMainContent || uiState.value.isCheckingAuth) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF2C3646)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color.White)
+            }
+        }
+
+        // Показываем основной контент, если проверка завершена И НЕ авторизованы
+        if (showMainContent && !uiState.value.isLoggedIn) {
             SingleRoundedCornerBox(
                 modifier = Modifier.align(Alignment.BottomCenter),
-                0.dp, 55.dp, 0.dp, 0.dp,{
+                0.dp, 55.dp, 0.dp, 0.dp, {
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -128,7 +150,6 @@ fun StartScreen(
         }
     }
 }
-
 
 @Composable
 fun LinkText(

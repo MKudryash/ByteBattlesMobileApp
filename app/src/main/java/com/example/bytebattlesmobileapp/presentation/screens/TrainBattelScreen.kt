@@ -29,9 +29,11 @@ import com.example.bytebattlesmobileapp.data.network.IncomingBattleMessage
 import com.example.bytebattlesmobileapp.domain.model.BattleParticipant
 import com.example.bytebattlesmobileapp.domain.model.TestCase
 import com.example.bytebattlesmobileapp.presentation.components.CustomInfoDialog
+import com.example.bytebattlesmobileapp.presentation.components.CustomTimerBar
 import com.example.bytebattlesmobileapp.presentation.components.Header
 import com.example.bytebattlesmobileapp.presentation.viewmodel.BattleLobbyUiState
 import com.example.bytebattlesmobileapp.presentation.viewmodel.BattleLobbyViewModel
+import com.example.bytebattlesmobileapp.presentation.viewmodel.BattleRoomState
 import com.example.bytebattlesmobileapp.presentation.viewmodel.SubmitSolutionStateBattle
 import com.example.bytebattlesmobileapp.presentation.viewmodel.TaskViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -71,6 +73,12 @@ fun TrainBattleScreen(
     val uiState by battleLobbyViewModel.uiState.collectAsStateWithLifecycle()
     val taskState by viewModel.taskState.collectAsStateWithLifecycle()
 
+
+    val totalTimeInSeconds = remember { 30 * 60 } // 30 минут
+    var timeRemaining by remember { mutableStateOf(totalTimeInSeconds) }
+    var isTimerRunning by remember { mutableStateOf(true) }
+
+
     // Состояние для результата битвы
     var battleResult by remember { mutableStateOf<BattleResult?>(null) }
 
@@ -84,24 +92,21 @@ fun TrainBattleScreen(
             println("TrainBattleScreen: Loading task with id: $taskId")
             viewModel.getTaskById(UUID.fromString(taskId))
         }
+
     }
 
-    // Обработка новых сообщений для уведомлений
-    LaunchedEffect(messages) {
-        val lastMessage = messages.lastOrNull()
-        if (lastMessage != null) {
-            // Добавляем сообщение в список видимых уведомлений
-            visibleNotifications.add(lastMessage)
-
-            // Автоматически скрываем уведомление через 5 секунд
-            scope.launch {
-                delay(5000)
-                visibleNotifications.remove(lastMessage)
+    LaunchedEffect(isTimerRunning) {
+        if (isTimerRunning) {
+            while (timeRemaining > 0) {
+                delay(1000L)
+                timeRemaining--
             }
-
-
+            // Когда время истекает
+            isTimerRunning = false
+            // Можно добавить логику при завершении времени
         }
     }
+
     val handleBattleMessage: (IncomingBattleMessage, String?) -> Unit = { message, playerId ->
         when (message) {
             is IncomingBattleMessage.BattleWon -> {
@@ -139,10 +144,7 @@ fun TrainBattleScreen(
             handleBattleMessage(lastMessage, battleLobbyViewModel.getPlayerId())
 
             // Автоматически скрываем уведомление через 5 секунд
-            scope.launch {
-                delay(5000)
-                visibleNotifications.remove(lastMessage)
-            }
+
         }
     }
     // Функция для обработки боевых сообщений
@@ -204,6 +206,15 @@ fun TrainBattleScreen(
                 textHeader = nameTask
             )
 
+            CustomTimerBar(
+                timeRemaining = timeRemaining,
+                totalTime = totalTimeInSeconds,
+                onPauseResume = { isTimerRunning = !isTimerRunning },
+                isRunning = isTimerRunning
+            )
+
+
+
             Column(
                 modifier = Modifier
                     .padding(vertical = 10.dp)
@@ -235,6 +246,7 @@ fun TrainBattleScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .fillMaxSize()
                             .background(Color.Black.copy(alpha = 0.7f)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -263,6 +275,7 @@ fun TrainBattleScreen(
                             onSubmitClick = {
                                 modalState = ModalState.SUBMIT_CODE
                             }
+                            , isTimer = false
                         )
                     }
                 }
@@ -554,49 +567,7 @@ data class BattleResult(
     val taskTitle: String,
     val message: String
 )
-@Composable
-fun BattleStatusBar(
-    roomId: String,
-    timeRemaining: Int,
-    participants: List<BattleParticipant>
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF3A4659)
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Битва продолжается",
-                    color = Color.White,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = "Осталось времени: ${timeRemaining} сек",
-                    color = Color(0xFFFF9800),
-                    fontSize = 14.sp
-                )
-            }
 
-            Text(
-                text = "Игроков: ${participants.size}",
-                color = Color.White,
-                fontSize = 14.sp
-            )
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

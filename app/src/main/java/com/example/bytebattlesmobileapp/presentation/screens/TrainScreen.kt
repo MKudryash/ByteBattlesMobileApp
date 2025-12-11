@@ -3,6 +3,7 @@ package com.example.bytebattlesmobileapp.presentation.screens
 import CodeEditor
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -80,7 +81,24 @@ fun TrainScreen(
     var taskTitle by remember { mutableStateOf("") }
 
 
+    var elapsedSeconds by remember { mutableStateOf(0) }
+    var isTimerRunning by remember { mutableStateOf(true) }
+
+
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
+    fun formatTime(seconds: Int): String {
+        val minutes = seconds / 60
+        val remainingSeconds = seconds % 60
+        return String.format("%02d:%02d", minutes, remainingSeconds)
+    }
+
+    // Запуск секундомера
+    LaunchedEffect(isTimerRunning) {
+        while (isTimerRunning) {
+            delay(1000) // Ждем 1 секунду
+            elapsedSeconds++
+        }
+    }
 
     // Загружаем задачу только один раз при инициализации
     LaunchedEffect(Unit) {
@@ -348,11 +366,13 @@ fun TrainScreen(
             is TaskViewModel.TaskDetailState.Success -> {
                 if (submitState !is TaskViewModel.SubmitSolutionState.Loading) {
                     BottomActionButtons(
+                        elapsedSeconds = elapsedSeconds,
+                        isTimerRunning = isTimerRunning,
+                        onTimerToggle = { isTimerRunning = !isTimerRunning },
                         onFinishClick = { modalState = ModalState.FINISH_TASK },
                         onInfoClick = { modalState = ModalState.TESTS_BOTTOM_SHEET },
-                        onSubmitClick = {
-                            modalState = ModalState.SUBMIT_CODE
-                        }
+                        onSubmitClick = { modalState = ModalState.SUBMIT_CODE },
+                        true
                     )
                 }
             }
@@ -564,9 +584,13 @@ private fun ModalWindowsManager(
 
 @Composable
  fun BottomActionButtons(
+    elapsedSeconds: Int =0,
+    isTimerRunning: Boolean = true,
+    onTimerToggle: () -> Unit = {},
     onFinishClick: () -> Unit,
     onInfoClick: () -> Unit,
-    onSubmitClick: () -> Unit
+    onSubmitClick: () -> Unit,
+    isTimer: Boolean
 ) {
     Box(
         modifier = Modifier
@@ -578,7 +602,8 @@ private fun ModalWindowsManager(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TimerText()
+            if(isTimer)
+                TimerText(elapsedSeconds,isTimerRunning,onTimerToggle)
 
             CircleButton(
                 painterResource(R.drawable.close),
@@ -602,15 +627,33 @@ private fun ModalWindowsManager(
 }
 
 @Composable
-private fun TimerText() {
-    Text(
-        modifier = Modifier.padding(horizontal = 10.dp),
-        text = "00:30",
-        color = Color.White,
-        fontWeight = FontWeight.Normal,
-        fontSize = 20.sp,
-        fontFamily = FontFamily(Font(R.font.ibmplexmono_regular))
-    )
+private fun TimerText(
+    elapsedSeconds: Int,
+    isTimerRunning: Boolean,
+    onPauseResume: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+
+
+        // Таймер
+        Text(
+            text = formatTime(elapsedSeconds),
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            fontFamily = FontFamily(Font(R.font.ibmplexmono_regular))
+        )
+    }
+}
+
+// Функция форматирования времени
+private fun formatTime(seconds: Int): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return String.format("%02d:%02d", minutes, remainingSeconds)
 }
 
 

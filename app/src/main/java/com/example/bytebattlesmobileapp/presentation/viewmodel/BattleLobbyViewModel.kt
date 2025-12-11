@@ -7,6 +7,7 @@ import com.example.bytebattlesmobileapp.data.datasource.local.PlayerIdManager
 import com.example.bytebattlesmobileapp.data.network.IncomingBattleMessage
 import com.example.bytebattlesmobileapp.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -29,6 +30,11 @@ class BattleLobbyViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(BattleLobbyUiState())
     val uiState: StateFlow<BattleLobbyUiState> = _uiState.asStateFlow()
 
+
+    private val _gameTimer = MutableStateFlow<Int?>(null)
+    val gameTimer: StateFlow<Int?> = _gameTimer.asStateFlow()
+
+    private var gameTimerJob: Job? = null
 
     private val _gameStarted = MutableStateFlow(false)
     val gameStarted: StateFlow<Boolean> = _gameStarted.asStateFlow()
@@ -418,6 +424,7 @@ class BattleLobbyViewModel @Inject constructor(
                         battleState = BattleRoomState.Finished // Добавьте это состояние
                     )
                 }
+                stopGameTimer()
             }
 
             is IncomingBattleMessage.BattleFinished -> {
@@ -427,6 +434,7 @@ class BattleLobbyViewModel @Inject constructor(
                         battleState = BattleRoomState.Finished
                     )
                 }
+                stopGameTimer()
             }
             is IncomingBattleMessage.BattleLost -> {
                 println("BattleLobbyViewModel: Battle lost. Winner: ${message.winnerId}")
@@ -435,6 +443,7 @@ class BattleLobbyViewModel @Inject constructor(
                         battleState = BattleRoomState.Finished
                     )
                 }
+                stopGameTimer()
             }
             is IncomingBattleMessage.ReadinessTimeout -> {
                 println("BattleLobbyViewModel: ReadinessTimeout received - message=${message.message}, readyCount=${message.readyCount}")
@@ -468,12 +477,15 @@ class BattleLobbyViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         battleState = BattleRoomState.GameStarted,
-                        gameDuration = message.duration
+                        gameDuration = message.duration,
+                        gameTimeRemaining = message.duration
                     )
                 }
 
                 // ВАЖНО: Обновляем taskId
                 _taskId.value = message.taskId
+
+                startGameTimer(message.duration)
 
                 // Устанавливаем флаг начала игры
                 _gameStarted.value = true
@@ -500,6 +512,63 @@ class BattleLobbyViewModel @Inject constructor(
 
             else -> {
                 // Обработка других сообщений
+            }
+        }
+    }
+    private fun startGameTimer(duration: Int) {
+        stopGameTimer() // Останавливаем предыдущий таймер если был
+
+        gameTimerJob = viewModelScope.launch {
+            var timeRemaining = duration
+
+            while (timeRemaining > 0 &&
+                _uiState.value.battleState == BattleRoomState.GameStarted) {
+
+                delay(1000)
+                timeRemaining--
+
+                // ОБНОВЛЯЕМ UIState вместо отдельного StateFlow
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        gameTimeRemaining = timeRemaining
+                    )
+                }
+
+                println("BattleLobbyViewModel: Game time remaining: $timeRemaining seconds")
+
+                // Если время вышло, завершаем игру
+                if (timeRemaining == 0) {
+                    println("BattleLobbyViewModel: Game time expired!")
+                    handleGameTimeExpired()
+                }
+            }
+        }
+    }
+
+    // Метод для остановки игрового таймера
+    private fun stopGameTimer() {
+        gameTimerJob?.cancel()
+        gameTimerJob = null
+        _gameTimer.value = null
+    }
+
+    // Обработка истечения времени игры
+    private fun handleGameTimeExpired() {
+        viewModelScope.launch {
+            println("BattleLobbyViewModel: Game time expired, leaving room...")
+
+            // Выходим из комнаты
+            leaveRoom()
+
+            // Отключаемся от WebSocket
+            disconnect()
+
+            // Обновляем состояние
+            _uiState.update {
+                it.copy(
+                    battleState = BattleRoomState.Error("Время игры истекло"),
+                    gameDuration = 0
+                )
             }
         }
     }
@@ -582,6 +651,7 @@ class BattleLobbyViewModel @Inject constructor(
 
     fun disconnect() {
         viewModelScope.launch {
+            stopGameTimer()
             disconnectBattleUseCase()
         }
     }
@@ -763,7 +833,7 @@ class BattleLobbyViewModel @Inject constructor(
             viewModelScope.launch {
                 // Отправляем команду на сервер о выходе
                 leaveRoomUseCase(roomId)
-
+                stopGameTimer()
                 // Сбрасываем состояние после выхода
                 _uiState.update {
                     BattleLobbyUiState(
@@ -811,6 +881,7 @@ class BattleLobbyViewModel @Inject constructor(
         val isCurrentPlayerReady: Boolean = false,
         val battleState: BattleRoomState = BattleRoomState.NotConnected, // Изменили начальное состояние
         val countdown: Int = 60,
+        val gameTimeRemaining: Int = 0,
         val gameDuration: Int = 0,
         val taskId: String? = null,
     )
