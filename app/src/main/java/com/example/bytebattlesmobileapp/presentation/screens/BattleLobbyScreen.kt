@@ -42,8 +42,8 @@ import android.widget.Toast
 @Composable
 fun BattleLobbyScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToGame: (String,String) -> Unit,
-    viewModel: BattleLobbyViewModel = hiltViewModel()
+    onNavigateToGame: (String, String) -> Unit,
+    viewModel: BattleLobbyViewModel = hiltViewModel(),
 ) {
     val taskId by viewModel.taskId.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -124,7 +124,7 @@ fun BattleLobbyScreen(
     LaunchedEffect(uiState.battleState) {
         if (uiState.battleState is BattleRoomState.GameStarted && taskId != null) {
             delay(2000)
-            onNavigateToGame(taskId!!,uiState.roomId)
+            onNavigateToGame(taskId!!, uiState.roomId)
         }
     }
 
@@ -161,9 +161,9 @@ fun BattleLobbyScreen(
 
             // Информация о комнате
             RoomInfoCard(
-                battleType = "1 vs 1",
+                battleType = viewModel.roomParams?.typeBattle ?: "1 vs 1",
                 difficulty = viewModel.roomParams?.difficulty ?: "Easy",
-                language = "C", // TODO: Получать из данных языка
+                language = viewModel.roomParams?.languageTitle ?: "C",
                 roomCode = uiState.roomId.takeLast(6).uppercase(),
                 onCopyCode = { code ->
                     clipboardManager.setText(AnnotatedString(code))
@@ -206,6 +206,7 @@ fun BattleLobbyScreen(
                         }
                     )
                 }
+
                 is BattleRoomState.WaitingForPlayers -> {
                     WaitingActions(
                         roomId = uiState.roomId,
@@ -221,6 +222,7 @@ fun BattleLobbyScreen(
                         }
                     )
                 }
+
                 is BattleRoomState.ReadyCheck -> {
                     ReadyCheckActions(
                         isReady = isCurrentPlayerReady,
@@ -233,16 +235,19 @@ fun BattleLobbyScreen(
                     )
 
                 }
+
                 is BattleRoomState.StartingGame -> {
                     StartingGameView()
                 }
+
                 is BattleRoomState.GameStarted -> {
                     GameStartedView(
                         taskId = taskId,
-                        onNavigateToGame = { taskId?.let { onNavigateToGame(it,uiState.roomId) } },
+                        onNavigateToGame = { taskId?.let { onNavigateToGame(it, uiState.roomId) } },
                         onNavigateBack = onNavigateBack
                     )
                 }
+
                 is BattleRoomState.Error -> {
                     ErrorView(
                         errorMessage = (uiState.battleState as BattleRoomState.Error).message,
@@ -292,7 +297,7 @@ fun NotConnectedView(
     isConnected: Boolean,
     isLoading: Boolean,
     onConnect: () -> Unit,
-    onLeave: () -> Unit
+    onLeave: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -362,7 +367,7 @@ fun RoomInfoCard(
     language: String,
     roomCode: String,
     onCopyCode: (String) -> Unit,
-    showCopyButton: Boolean = true
+    showCopyButton: Boolean = true,
 ) {
     Card(
         modifier = Modifier
@@ -394,7 +399,9 @@ fun RoomInfoCard(
                 ) {
                     Text(
                         text = if (roomCode.isNotEmpty()) roomCode else "------",
-                        color = if (roomCode.isNotEmpty()) Color(0xFF53C2C3) else Color.White.copy(alpha = 0.5f),
+                        color = if (roomCode.isNotEmpty()) Color(0xFF53C2C3) else Color.White.copy(
+                            alpha = 0.5f
+                        ),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold))
@@ -402,7 +409,7 @@ fun RoomInfoCard(
 
                     if (showCopyButton && roomCode.isNotEmpty()) {
                         Icon(
-                            imageVector = Icons.Default.AccountCircle,
+                            painterResource(R.drawable.door),
                             contentDescription = "Копировать",
                             tint = Color(0xFF53C2C3),
                             modifier = Modifier
@@ -420,7 +427,7 @@ fun RoomInfoCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                /*InfoItem(
+                InfoItem(
                     title = "Тип",
                     value = battleType,
                     icon = painterResource(R.drawable.one_vs_one)
@@ -435,8 +442,8 @@ fun RoomInfoCard(
                 InfoItem(
                     title = "Язык",
                     value = language,
-                    icon = painterResource(R.drawable.csharp)
-                )*/
+                    icon = painterResource(R.drawable.all_language)
+                )
             }
         }
     }
@@ -447,7 +454,7 @@ fun RoomStatusSection(
     battleState: BattleRoomState,
     countdown: Int,
     participantsCount: Int,
-    readyCount: Int
+    readyCount: Int,
 ) {
     Card(
         modifier = Modifier
@@ -479,12 +486,12 @@ fun RoomStatusSection(
                 Text(
                     text =
                         when (battleState) {
-                        is BattleRoomState.NotConnected -> "Подключение..."
-                        is BattleRoomState.WaitingForPlayers -> "Ожидание игроков"
-                        is BattleRoomState.ReadyCheck -> "Подтверждение готовности"
-                        is BattleRoomState.StartingGame -> "Начинаем битву!"
-                        is BattleRoomState.GameStarted -> "Битва началась!"
-                        is BattleRoomState.Error -> "Ошибка"
+                            is BattleRoomState.NotConnected -> "Подключение..."
+                            is BattleRoomState.WaitingForPlayers -> "Ожидание игроков"
+                            is BattleRoomState.ReadyCheck -> "Подтверждение готовности"
+                            is BattleRoomState.StartingGame -> "Начинаем битву!"
+                            is BattleRoomState.GameStarted -> "Битва началась!"
+                            is BattleRoomState.Error -> "Ошибка"
                             BattleRoomState.Finished -> "Завершение"
                         },
                     color = Color.White,
@@ -509,11 +516,26 @@ fun RoomStatusSection(
 
             // Иконка состояния
             val (icon, color) = when (battleState) {
-                is BattleRoomState.NotConnected -> painterResource(R.drawable.hourglass) to Color(0xFF757575)
-                is BattleRoomState.WaitingForPlayers -> painterResource(R.drawable.hourglass) to Color(0xFFFF9800)
-                is BattleRoomState.ReadyCheck -> painterResource(R.drawable.check) to Color(0xFF4CAF50)
-                is BattleRoomState.StartingGame -> painterResource(R.drawable.hourglass) to Color(0xFF2196F3)
-                is BattleRoomState.GameStarted -> painterResource(R.drawable.hourglass) to Color(0xFF9C27B0)
+                is BattleRoomState.NotConnected -> painterResource(R.drawable.hourglass) to Color(
+                    0xFF757575
+                )
+
+                is BattleRoomState.WaitingForPlayers -> painterResource(R.drawable.hourglass) to Color(
+                    0xFFFF9800
+                )
+
+                is BattleRoomState.ReadyCheck -> painterResource(R.drawable.check) to Color(
+                    0xFF4CAF50
+                )
+
+                is BattleRoomState.StartingGame -> painterResource(R.drawable.hourglass) to Color(
+                    0xFF2196F3
+                )
+
+                is BattleRoomState.GameStarted -> painterResource(R.drawable.hourglass) to Color(
+                    0xFF9C27B0
+                )
+
                 is BattleRoomState.Error -> painterResource(R.drawable.error) to Color(0xFFF44336)
                 BattleRoomState.Finished -> painterResource(R.drawable.check) to Color(0xFF4CAF50)
             }
@@ -532,7 +554,7 @@ fun RoomStatusSection(
 fun ParticipantsList(
     participants: List<BattleParticipant>,
     currentPlayerId: String,
-    battleState: BattleRoomState
+    battleState: BattleRoomState,
 ) {
     Card(
         modifier = Modifier
@@ -558,7 +580,7 @@ fun ParticipantsList(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(participants) { participant ->
-                   ParticipantItem(
+                    ParticipantItem(
                         participant = participant,
                         isCurrentPlayer = participant.id == currentPlayerId,
                         battleState = battleState
@@ -582,7 +604,7 @@ fun WaitingActions(
     canStart: Boolean,
     onStartBattle: () -> Unit,
     onLeaveBattle: () -> Unit,
-    onCopyCode: (String) -> Unit
+    onCopyCode: (String) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -661,7 +683,7 @@ fun WaitingActions(
 fun GameStartedView(
     taskId: String?,
     onNavigateToGame: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -722,7 +744,7 @@ fun GameStartedView(
 fun ErrorView(
     errorMessage: String,
     onRetry: () -> Unit,
-    onLeaveBattle: () -> Unit
+    onLeaveBattle: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -785,9 +807,11 @@ fun ErrorView(
 @Preview
 fun BattleLobbyScreenPreview() {
     MaterialTheme {
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF2C3646))) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF2C3646))
+        ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 Header(
                     onNavigateBack = {},
@@ -840,11 +864,12 @@ fun BattleLobbyScreenPreview() {
         }
     }
 }
+
 @Composable
 fun ParticipantItem(
     participant: BattleParticipant,
     isCurrentPlayer: Boolean,
-    battleState: BattleRoomState
+    battleState: BattleRoomState,
 ) {
     Row(
         modifier = Modifier
@@ -924,6 +949,7 @@ fun ParticipantItem(
                     }
                 }
             }
+
             else -> {
                 // Иконка статуса соединения
                 Icon(
@@ -994,7 +1020,7 @@ fun EmptyParticipantSlot(index: Int) {
 fun InfoItem(
     title: String,
     value: String,
-    icon: androidx.compose.ui.graphics.painter.Painter
+    icon: androidx.compose.ui.graphics.painter.Painter,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -1028,7 +1054,7 @@ fun ReadyCheckActions(
     isReady: Boolean,
     countdown: Int,
     onReadyToggle: () -> Unit,
-    onLeaveBattle: () -> Unit
+    onLeaveBattle: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -1113,7 +1139,7 @@ fun StartingGameView() {
 fun ErrorDialog(
     errorMessage: String,
     onDismiss: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,

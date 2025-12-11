@@ -170,7 +170,9 @@ fun BattleScreen(
                                 viewModel.roomParams = BattleRoomParams(
                                     roomName = "${selectedLang.title} ${selectedDiff.name} Battle",
                                     languageId = selectedLang.id.trim(),
-                                    difficulty = selectedDiff.name
+                                    difficulty = selectedDiff.name,
+                                    languageTitle = selectedLang.title,
+                                    typeBattle = battleTypes[selectedTypeBattle].name
                                 )
 
                                 println("=== STARTING BATTLE ===")

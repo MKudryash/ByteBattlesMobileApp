@@ -18,10 +18,11 @@ import com.example.bytebattlesmobileapp.R
 
 @Composable
 fun BackArrow(
-    onNavigateBack:()->Unit
+    onNavigateBack:()->Unit,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(40.dp)
             .clip(RoundedCornerShape(15.dp))
             .background(Color.Transparent)

@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -175,7 +176,7 @@ fun MainScreen(
                                 leaders.take(5).forEachIndexed { index, leader ->
                                     UserTopCard(
                                         nickUser = leader.userName,
-                                        painter = painterResource(R.drawable.icon_man),
+                                        painter = getIconLeader(index+1),
                                         point = leader.totalExperience.toString(),
                                     )
                                 }
@@ -236,6 +237,26 @@ fun MainScreen(
     }
 }
 
+@Composable
+private fun getIconLeader(place:Int): Painter{
+    return when(place){
+        1->{
+            painterResource(R.drawable.first_medal)
+        }
+        2->{
+            painterResource(R.drawable.second_medal)
+
+        }
+        3->{
+            painterResource(R.drawable.third_medal)
+
+        }
+        else->{
+            painterResource(R.drawable.medal)
+        }
+    }
+
+}
 
 @Preview
 @Composable

@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.bytebattlesmobileapp.presentation.components.ActionButton
 import kotlinx.coroutines.delay
 
 @Composable
@@ -102,7 +103,7 @@ fun BattleResultScreen(
                         var countdown by remember { mutableStateOf(10) }
 
                         LaunchedEffect(Unit) {
-                            repeat(3) {
+                            repeat(10) {
                                 delay(1000)
                                 countdown--
                             }
@@ -114,6 +115,9 @@ fun BattleResultScreen(
                             fontSize = 14.sp
                         )
 
+                    ActionButton(text = "ВЫЙТИ",{
+                        onDismiss()
+                    }, color =   Color(0xFFFF9800))
                 }
             }
         }

@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bytebattlesmobileapp.R
 import com.example.bytebattlesmobileapp.presentation.components.ActionButton
+import com.example.bytebattlesmobileapp.presentation.components.BackArrow
 import com.example.bytebattlesmobileapp.presentation.components.SingleRoundedCornerBox
 import com.example.bytebattlesmobileapp.presentation.viewmodel.BattleLobbyViewModel
 
@@ -157,20 +158,9 @@ fun BattleSelectionScreen(
             }
         }
 
-        // Кнопка назад
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-        ) {
-            Image(
-                painter = painterResource(R.drawable.arrow_start),
-                contentDescription = "Назад",
-                modifier = Modifier
-                    .size(40.dp)
-                    .clickable(onClick = onNavigateBack)
-                    .padding(8.dp)
-            )
-        }
+        BackArrow({
+            onNavigateBack()
+
+        },   Modifier.padding(10.dp))
     }
 }

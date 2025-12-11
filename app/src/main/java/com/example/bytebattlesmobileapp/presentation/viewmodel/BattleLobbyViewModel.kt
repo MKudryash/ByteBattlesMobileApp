@@ -570,7 +570,6 @@ class BattleLobbyViewModel @Inject constructor(
             disconnectBattleUseCase()
         }
     }
-
     fun createRoom() {
         roomParams?.let { params ->
             viewModelScope.launch {
@@ -771,7 +770,9 @@ class BattleLobbyViewModel @Inject constructor(
     data class BattleRoomParams(
         val roomName: String,
         val languageId: String,
-        val difficulty: String
+        val difficulty: String,
+        val languageTitle: String? = "",
+        val typeBattle: String? =""
     )
 
     // Обновленный BattleLobbyUiState с начальным состоянием
