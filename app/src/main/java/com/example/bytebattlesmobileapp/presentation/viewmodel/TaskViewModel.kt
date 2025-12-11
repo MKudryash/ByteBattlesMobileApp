@@ -134,7 +134,7 @@ class TaskViewModel @Inject constructor(
         showNotification(
             title = title,
             message = message,
-            type = if (solution.successRate == 100) NotificationType.SUCCESS else NotificationType.WARNING,
+            type = if (solution.passedTests==solution.totalTests) NotificationType.SUCCESS else NotificationType.WARNING,
             autoDismiss = true
         )
     }
