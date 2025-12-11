@@ -80,7 +80,7 @@ fun TaskInfoScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = (taskState as TaskViewModel.TaskDetailState.Error).message ?: "Неизвестная ошибка",
+                            text =  "Что-то пошло не так попробуйте позже",
                             color = Color.White,
                             fontSize = 16.sp
                         )

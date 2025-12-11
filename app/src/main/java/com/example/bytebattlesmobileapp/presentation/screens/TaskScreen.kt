@@ -140,7 +140,7 @@ fun TaskScreen(
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Text(
-                                        text = (languagesState as TaskViewModel.LanguageState.Error).message,
+                                        text =  "Что-то пошло не так попробуйте позже",
                                         color = Color.White
                                     )
                                 }
@@ -155,7 +155,7 @@ fun TaskScreen(
                                 // Добавляем опцию "Все языки"
                                 item {
                                     CardLanguage(
-                                        painter = painterResource(R.drawable.icons_all_languages), // Добавьте иконку для всех языков
+                                        painter = painterResource(R.drawable.icon_dark), // Добавьте иконку для всех языков
                                         nameLanguage = "Все",
                                         selected = selectedLanguageId == null,
                                         onClick = {
@@ -253,7 +253,7 @@ fun TaskScreen(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = (tasksState as TaskViewModel.TaskState.Error).message,
+                                    text =  "Что-то пошло не так попробуйте позже",
                                     color = Color.White
                                 )
                             }
@@ -287,7 +287,7 @@ fun getLanguageIcon(languageId: String): Int {
         "C" -> R.drawable.language_c
         "C#" -> R.drawable.csharp
         // Добавьте другие языки
-        else -> R.drawable.icons_all_languages
+        else -> R.drawable.all_language
     }
 }
 @Preview

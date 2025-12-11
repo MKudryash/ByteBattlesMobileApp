@@ -90,6 +90,13 @@ fun MainScreen(
                 Column(
                     modifier = Modifier.padding(horizontal = 15.dp)
                 ) {
+                    Text(
+                        "Топ игроков",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp,
+                        fontFamily = FontFamily(Font(R.font.ibmplexmono_semibold)),
+                    )
 
                     Spacer(modifier = Modifier.height(10.dp))
 
